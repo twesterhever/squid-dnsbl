@@ -32,10 +32,11 @@ def is_valid_domain(chkdomain: str):
         # strip trailing "." if present
         chkdomain = chkdomain[:-1]
 
-    # check if sublabels contains invalid characters
+    # check if sublabels are invalid (i.e. are empty, too long or contain
+    # invalid characters)
     for sublabel in chkdomain.split("."):
-        if not allowedchars.match(sublabel):
-            # some label is too long
+        if not sublabel or not allowedchars.match(sublabel):
+            # sublabel is invalid
             return False
 
     return True
