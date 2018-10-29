@@ -1,13 +1,13 @@
 # Squid helpers for querying domains and IPs against DNSBLs
 
-The [http://www.squid-cache.org/](Squid) proxy software is widely
+The [Squid](http://www.squid-cache.org/) proxy software is widely
 used, and so is its ability to introduce access limits, i.e.
 by only allowing traffic to well-known ports.
 
 While Squid is able to handle file based blocklists by taking
-advantage of [http://squidguard.org/](SquidGuard), the usage
+advantage of [SquidGuard](http://squidguard.org/), the usage
 of DNSBLs has never been that easy. There is
-[http://squidguard.org/Downloads/Contrib/squidGuard-1.4-dnsbl.patch](some patch available)
+[some patch available](http://squidguard.org/Downloads/Contrib/squidGuard-1.4-dnsbl.patch)
 which adds this feature, but it did not seem to made it into
 many distribution packages.
 
