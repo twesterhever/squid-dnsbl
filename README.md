@@ -20,8 +20,34 @@ This repository aims to close this gap by providing to Python 3.x
 based scripts which can be accessed by Squid as external helpers.
 
 ## dnsbl.py
+This script looks up domains against one or more URIBLs given
+as command line arguments:
+```
+./dnsbl.py dbl.spamhaus.org multi.uribl.com
+```
+It returns `OK` if a domain was found, and `ERR` in case it was not.
+
+Depending on use this script in combination with a black- or
+whitelist, one might to block connection attempts to domains
+caused `OK` (blacklist) or `ERR` (whitelist).
+
+This basically implements the function of mentioned SquidGuard
+patch above.
 
 ## dnsbl-ip.py
+This script looks up any resolved IP address against one or
+more RBL given as command line arguments:
+```
+./dnsbl-ip.py sbl-xbl.spamhaus.org bl.blocklist.de
+```
+Similar to its counterpart above, it returns `OK` if _any_
+IP address was found, and `ERR` if _none_ of them were.
+
+This script handles both IPv4 and IPv6 addresses.
+
+Be careful in your RBL choice: For example, if the
+[Spamhaus ZEN](https://www.spamhaus.org/zen/) RBL is used,
+connection attempts to dynamic IP ranges will be blocked, too.
 
 ## Example Squid configuration
 
