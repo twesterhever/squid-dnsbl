@@ -20,8 +20,9 @@ This repository aims to close this gap by providing to Python 3.x
 based scripts which can be accessed by Squid as external helpers.
 
 ## dnsbl.py
-This script looks up domains against one or more URIBLs given
-as command line arguments:
+This script looks up domains against one or more
+[URIBL](https://en.wikipedia.org/wiki/DNSBL#URI_DNSBL) given as
+command line arguments:
 ```
 ./dnsbl.py dbl.spamhaus.org multi.uribl.com
 ```
@@ -36,7 +37,8 @@ patch above.
 
 ## dnsbl-ip.py
 This script looks up any resolved IP address against one or
-more RBL given as command line arguments:
+more [RBL](https://en.wikipedia.org/wiki/DNSBL#DNSBL_queries)
+given as command line arguments:
 ```
 ./dnsbl-ip.py sbl-xbl.spamhaus.org bl.blocklist.de
 ```
