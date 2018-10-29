@@ -130,7 +130,6 @@ while True:
     except (ValueError, AttributeError):
         # in this case, we are probably dealing with a domain
         IPS = resolve_addresses(QSTRING)
-        print(IPS)
 
     # check if we have some IP addresses to lookup for...
     if not IPS:
@@ -142,7 +141,6 @@ while True:
         for udomain in RBLDOMAIN:
             for idx, qip in enumerate(IPS):
                 try:
-                    print(build_reverse_ip(qip) + "." + udomain)
                     RESOLVER.query((build_reverse_ip(qip) + "." + udomain), 'A')
                 except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
                     qfailed = True
