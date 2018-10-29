@@ -6,12 +6,17 @@
 Squid helper script for querying domains against a given DNSBL
 such as Spamhaus DBL. IP addresses are handled, but will most
 likely not result in any useful query (see dnsbl-ip.py for
-further details on this)."""
+further details on this).
+
+In case multiple DNSBL URIs are given as command line arguments,
+the script uses all of them."""
 
 # Import needed packages
 import re
 import sys
 import dns.resolver
+
+URIBLDOMAIN = []
 
 
 def is_valid_domain(chkdomain: str):
@@ -24,7 +29,7 @@ def is_valid_domain(chkdomain: str):
     # allowed characters
     allowedchars = re.compile(r"(?!-)[a-z\d\-\_]{1,63}(?<!-)$", re.IGNORECASE)
 
-    if len(chkdomain) > 255 or not "." in chkdomain:
+    if len(chkdomain) > 255 or "." not in chkdomain:
         # do not allow domains which are very long or do not contain a dot
         return False
 
@@ -43,11 +48,12 @@ def is_valid_domain(chkdomain: str):
 
 
 # test if DNSBL URI is a valid domain...
-if not is_valid_domain(sys.argv[1]):
-    print("ERR")
-    sys.exit(127)
-else:
-    URIBLDOMAIN = sys.argv[1] + "."
+for tdomain in sys.argv[1:]:
+    if not is_valid_domain(tdomain):
+        print("ERR")
+        sys.exit(127)
+    else:
+        URIBLDOMAIN.append(tdomain + ".")
 
 # set up resolver object
 RESOLVER = dns.resolver.Resolver()
@@ -76,11 +82,17 @@ while True:
     # test if an A record can be found for this domain
     # some exceptions in case of invalid domains (label too long, or empty)
     # are also handled here
-    try:
-        RESOLVER.query((QUERYDOMAIN + "." + URIBLDOMAIN), 'A')
-    except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
+    for udomain in URIBLDOMAIN:
+            try:
+                RESOLVER.query((QUERYDOMAIN + "." + udomain), 'A')
+            except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
+                qfailed = True
+            else:
+                print("OK")
+                qfailed = False
+                break
+
+    if qfailed:
         print("ERR")
-    else:
-        print("OK")
 
 # EOF
