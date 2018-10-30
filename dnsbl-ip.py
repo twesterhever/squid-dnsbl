@@ -148,6 +148,9 @@ while True:
                     print("OK")
                     qfailed = False
                     break
+            else:
+                continue
+            break
 
         if qfailed:
             print("ERR")

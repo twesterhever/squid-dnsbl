@@ -87,14 +87,14 @@ while True:
     # some exceptions in case of invalid domains (label too long, or empty)
     # are also handled here
     for udomain in URIBLDOMAIN:
-            try:
-                RESOLVER.query((QUERYDOMAIN + "." + udomain), 'A')
-            except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
-                qfailed = True
-            else:
-                print("OK")
-                qfailed = False
-                break
+        try:
+            RESOLVER.query((QUERYDOMAIN + "." + udomain), 'A')
+        except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
+            qfailed = True
+        else:
+            print("OK")
+            qfailed = False
+            break
 
     if qfailed:
         print("ERR")
