@@ -70,7 +70,7 @@ RESOLVER.timeout = 2
 # a valid domain name, ERR is returned. Otherwise, it's OK.
 while True:
     try:
-        QUERYDOMAIN = str(sys.stdin.readline().rstrip())
+        QUERYDOMAIN = str(sys.stdin.readline().rstrip().split()[0])
     except KeyboardInterrupt:
         sys.exit(127)
 
