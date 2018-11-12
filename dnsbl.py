@@ -12,6 +12,7 @@ In case multiple DNSBL URIs are given as command line arguments,
 the script uses all of them."""
 
 # Import needed packages
+import ipaddress
 import re
 import sys
 import dns.resolver
@@ -25,6 +26,14 @@ def is_valid_domain(chkdomain: str):
     Checks if given domain is valid, i.e. does not contain any
     unspecified characters. It returns True if a domain was valid,
     and False if not."""
+
+    # test if chkdomain is an IP address (we will return ERR in
+    # such cases, as most URIBLs are unable to handle them)
+    try:
+        addr = ipaddress.ip_address(chkdomain)
+        return False
+    except ValueError:
+        pass
 
     # allowed characters
     allowedchars = re.compile(r"(?!-)[a-z\d\-\_]{1,63}(?<!-)$", re.IGNORECASE)
