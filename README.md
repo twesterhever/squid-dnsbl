@@ -80,6 +80,6 @@ For usage as a whitelist, choose `allow` instead of `deny` here.
 You might want to rename the ACL then, as the given example
 would be misleading.
 
-# Further Reading
+## Further Readings
 * [Statistics concerning hit and FP rate of blacklists](https://www.intra2net.com/en/support/antispam/index.php_sort=type_order=desc.html)
 * [Comparison of DNS blacklists](https://en.wikipedia.org/wiki/Comparison_of_DNS_blacklists)
