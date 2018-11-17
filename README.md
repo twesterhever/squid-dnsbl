@@ -62,10 +62,10 @@ them as an external ACL helper.
 Here is the corresponding snippet of a `squid.conf` file:
 
 ```
-external_acl_type dnsbliphelper children-max=10 children-startup=2 %DST /usr/local/bin/dnsbl-ip.py sbl-xbl.spamhaus.org
+external_acl_type dnsbliphelper children-max=10 children-startup=2 %DST /usr/local/bin/dnsbl-ip.py sbl-xbl.spamhaus.org bl.blocklist.de
 acl dnsblip external dnsbliphelper
 
-external_acl_type dnsbldomhelper children-max=10 children-startup=2 %DST /usr/local/bin/dnsbl.py dbl.spamhaus.org
+external_acl_type dnsbldomhelper children-max=10 children-startup=2 %DST /usr/local/bin/dnsbl.py dbl.spamhaus.org multi.uribl.com
 acl dnsbldom external dnsbldomhelper
 ```
 
@@ -79,3 +79,7 @@ http_access deny dnsbldom
 For usage as a whitelist, choose `allow` instead of `deny` here.
 You might want to rename the ACL then, as the given example
 would be misleading.
+
+# Further Reading
+* [Statistics concerning hit and FP rate of blacklists](https://www.intra2net.com/en/support/antispam/index.php_sort=type_order=desc.html)
+* [Comparison of DNS blacklists](https://en.wikipedia.org/wiki/Comparison_of_DNS_blacklists)
