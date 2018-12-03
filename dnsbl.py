@@ -1,5 +1,5 @@
 #!/usr/local/bin/python3 -u
-# -*- encoding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 """ dnsbl [.py]
 
