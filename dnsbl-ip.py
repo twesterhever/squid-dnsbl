@@ -94,8 +94,12 @@ def resolve_addresses(domain: str):
 
 
 # test if DNSBL URI is a valid domain...
-if not sys.argv[1]:
-    print("ERR")
+try:
+    if not sys.argv[1]:
+        print("ERR")
+        sys.exit(127)
+except IndexError:
+    print("Usage: " + sys.argv[0] + " RBL1 RBL2 RBLn")
     sys.exit(127)
 
 for tdomain in sys.argv[1:]:

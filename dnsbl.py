@@ -57,8 +57,12 @@ def is_valid_domain(chkdomain: str):
 
 
 # test if DNSBL URI is a valid domain...
-if not sys.argv[1]:
-    print("ERR")
+try:
+    if not sys.argv[1]:
+        print("ERR")
+        sys.exit(127)
+except IndexError:
+    print("Usage: " + sys.argv[0] + " URIBL1 URIBL2 URIBLn")
     sys.exit(127)
 
 for tdomain in sys.argv[1:]:
