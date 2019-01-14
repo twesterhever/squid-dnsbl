@@ -70,7 +70,7 @@ for tdomain in sys.argv[1:]:
         print("ERR")
         sys.exit(127)
     else:
-        URIBLDOMAIN.append(tdomain + ".")
+        URIBLDOMAIN.append(tdomain.strip(".") + ".")
 
 # set up resolver object
 RESOLVER = dns.resolver.Resolver()

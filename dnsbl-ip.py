@@ -107,7 +107,7 @@ for tdomain in sys.argv[1:]:
         print("ERR")
         sys.exit(127)
     else:
-        RBLDOMAIN.append(tdomain + ".")
+        RBLDOMAIN.append(tdomain.strip(".") + ".")
 
 # set up resolver object
 RESOLVER = dns.resolver.Resolver()
