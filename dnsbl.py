@@ -30,7 +30,7 @@ def is_valid_domain(chkdomain: str):
     # test if chkdomain is an IP address (we will return ERR in
     # such cases, as most URIBLs are unable to handle them)
     try:
-        addr = ipaddress.ip_address(chkdomain)
+        ipaddress.ip_address(chkdomain)
         return False
     except ValueError:
         pass
