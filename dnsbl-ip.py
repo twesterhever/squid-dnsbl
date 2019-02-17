@@ -70,9 +70,9 @@ def build_reverse_ip(ipaddr):
         # in this case, we are dealing with an IP address
         rev = '.'.join(addr.reverse_pointer.split('.')[:-2])
         return rev
-    else:
-        # in this case, we are dealing with a martian
-        return None
+
+    # in this case, we are dealing with a martian
+    return None
 
 
 def resolve_addresses(domain: str):
