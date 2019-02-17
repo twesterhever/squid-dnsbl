@@ -15,7 +15,16 @@ the script uses all of them."""
 import ipaddress
 import re
 import sys
+import logging
+import logging.handlers
 import dns.resolver
+
+# Initialise logging (to "/dev/log" for level WARNING by default)
+LOGIT = logging.getLogger('squid-dnsbl-helper')
+LOGIT.setLevel(logging.WARNING)
+
+SYSLOGH = logging.handlers.SysLogHandler(address="/dev/log")
+LOGIT.addHandler(SYSLOGH)
 
 URIBLDOMAIN = []
 
@@ -107,6 +116,7 @@ while True:
         else:
             print("OK")
             qfailed = False
+            LOGIT.warning("URIBL hit on %s.%s", QUERYDOMAIN, udomain)
             break
 
     if qfailed:
