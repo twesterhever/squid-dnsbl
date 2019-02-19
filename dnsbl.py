@@ -29,6 +29,19 @@ LOGIT.addHandler(SYSLOGH)
 URIBLDOMAIN = []
 
 
+def is_ipaddress(chkinput: str):
+    """ Function call: is_ipaddress(input)
+
+    Tests if input is an IP address. It returns True if it
+    is one (v4/v6 does not matter), and False if not."""
+
+    try:
+        ipaddress.ip_address(chkinput)
+        return True
+    except ValueError:
+        return False
+
+
 def is_valid_domain(chkdomain: str):
     """ Function call: is_valid_domain(domain name)
 
@@ -36,13 +49,9 @@ def is_valid_domain(chkdomain: str):
     unspecified characters. It returns True if a domain was valid,
     and False if not."""
 
-    # test if chkdomain is an IP address (we will return ERR in
-    # such cases, as most URIBLs are unable to handle them)
-    try:
-        ipaddress.ip_address(chkdomain)
+    # test if chkdomain is an IP address (should not happen here)
+    if is_ipaddress(chkdomain):
         return False
-    except ValueError:
-        pass
 
     # allowed characters
     allowedchars = re.compile(r"(?!-)[a-z\d\-\_]{1,63}(?<!-)$", re.IGNORECASE)
@@ -99,6 +108,13 @@ while True:
     # abort if domain was empty (no STDIN input received)
     if not QUERYDOMAIN:
         break
+
+    # check if input is an IP address (we need to return ERR in such
+    # cases, as most URIBLs are unable to handle them, and BH will result
+    # in blocking direct IP communication)
+    if is_ipaddress(QUERYDOMAIN):
+        print("ERR")
+        continue
 
     # check if it is a valid domain
     if not is_valid_domain(QUERYDOMAIN):
