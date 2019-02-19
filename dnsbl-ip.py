@@ -125,8 +125,8 @@ RESOLVER = dns.resolver.Resolver()
 RESOLVER.timeout = 2
 
 # read domain names or IP addresses from STDIN in a while loop, and do RBL lookups
-# for every valid domin or IP address. In case it is not listed in RBL or was not
-# a valid domain name, ERR is returned. Otherwise, it's OK.
+# for every valid domin or IP address. In case it is not listed in RBL, ERR is returned.
+# BH is returned if input was invalid. Otherwise, return string is OK.
 while True:
     try:
         QSTRING = str(sys.stdin.readline().rstrip().split()[0])

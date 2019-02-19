@@ -88,8 +88,8 @@ RESOLVER = dns.resolver.Resolver()
 RESOLVER.timeout = 2
 
 # read domain names from STDIN in a while loop, and do URIBL lookups
-# for every valid domin. In case it is not listed in URIBL or was not
-# a valid domain name, ERR is returned. Otherwise, it's OK.
+# for every valid domin. In case it is not listed in URIBL, ERR is returned.
+# BH is returned if input was invalid. Otherwise, return string is OK.
 while True:
     try:
         QUERYDOMAIN = str(sys.stdin.readline().rstrip().split()[0])
