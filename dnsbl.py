@@ -68,7 +68,7 @@ def is_valid_domain(chkdomain: str):
 # test if DNSBL URI is a valid domain...
 try:
     if not sys.argv[1]:
-        print("ERR")
+        print("BH")
         sys.exit(127)
 except IndexError:
     print("Usage: " + sys.argv[0] + " URIBL1 URIBL2 URIBLn")
@@ -76,7 +76,7 @@ except IndexError:
 
 for tdomain in sys.argv[1:]:
     if not is_valid_domain(tdomain):
-        print("ERR")
+        print("BH")
         sys.exit(127)
     else:
         URIBLDOMAIN.append(tdomain.strip(".") + ".")
@@ -102,7 +102,7 @@ while True:
 
     # check if it is a valid domain
     if not is_valid_domain(QUERYDOMAIN):
-        print("ERR")
+        print("BH")
         continue
 
     # test if an A record can be found for this domain

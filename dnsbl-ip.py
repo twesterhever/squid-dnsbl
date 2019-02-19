@@ -105,7 +105,7 @@ def resolve_addresses(domain: str):
 # test if DNSBL URI is a valid domain...
 try:
     if not sys.argv[1]:
-        print("ERR")
+        print("BH")
         sys.exit(127)
 except IndexError:
     print("Usage: " + sys.argv[0] + " RBL1 RBL2 RBLn")
@@ -113,7 +113,7 @@ except IndexError:
 
 for tdomain in sys.argv[1:]:
     if not is_valid_domain(tdomain):
-        print("ERR")
+        print("BH")
         sys.exit(127)
     else:
         RBLDOMAIN.append(tdomain.strip(".") + ".")
@@ -146,7 +146,7 @@ while True:
 
     # check if we have some IP addresses to lookup for...
     if not IPS:
-        print("ERR")
+        print("BH")
     else:
         # query each IP address against RBL and enumerate output...
         qfailed = False
