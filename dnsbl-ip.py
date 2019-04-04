@@ -19,9 +19,9 @@ import logging
 import logging.handlers
 import dns.resolver
 
-# Initialise logging (to "/dev/log" for level WARNING by default)
+# Initialise logging (to "/dev/log" for level INFO by default)
 LOGIT = logging.getLogger('squid-dnsbl-helper')
-LOGIT.setLevel(logging.WARNING)
+LOGIT.setLevel(logging.INFO)
 
 SYSLOGH = logging.handlers.SysLogHandler(address="/dev/log")
 LOGIT.addHandler(SYSLOGH)
@@ -102,6 +102,40 @@ def resolve_addresses(domain: str):
     return ips
 
 
+def test_rbl_rfc5782(rbltdomain: str):
+    """ Function call: test_rbl_rfc5782(RBL address)
+
+    This function tests if an RBL works properly according to RFC 5782 (section 5).
+    It specifies an RBL must not list 127.0.0.1, and must list
+    127.0.0.2 for testing purposes.
+
+    Since IPv6 listings are comperatively rare at the time of writing,
+    IPv6 related tests are omitted here.
+
+    In case of success, a boolean True is returned, and False otherwise."""
+
+    # test if 127.0.0.1 is not listed
+    try:
+        RESOLVER.query((build_reverse_ip("127.0.0.1") + "." + rbltdomain), 'A')
+    except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
+        LOGIT.debug("RBL '%s' is not listing testpoint address 127.0.0.1 - good", rbltdomain)
+    else:
+        LOGIT.error("RBL '%s' is violating RFC 5782 (section 5) as it lists 127.0.0.1", rbltdomain)
+        return False
+
+    # test if 127.0.0.2 is listed
+    try:
+        RESOLVER.query((build_reverse_ip("127.0.0.2") + "." + rbltdomain), 'A')
+    except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
+        LOGIT.error("RBL '%s' is violating RFC 5782 (section 5) as it does not list 127.0.0.2", rbltdomain)
+        return False
+    else:
+        LOGIT.debug("RBL '%s' is listing testpoint address 127.0.0.2 - good", rbltdomain)
+
+    LOGIT.info("RBL '%s' seems to be operational and compliant to RFC 5782 (section 5) - good", rbltdomain)
+    return True
+
+
 # test if DNSBL URI is a valid domain...
 try:
     if not sys.argv[1]:
@@ -124,6 +158,15 @@ RESOLVER = dns.resolver.Resolver()
 # set timeout for resolving
 RESOLVER.timeout = 2
 
+# test if specified RBLs work correctly (according to RFC 5782 [section 5])...
+for trbl in RBLDOMAIN:
+    if not test_rbl_rfc5782(trbl):
+        # in this case, an RBL has failed the test...
+        LOGIT.error("Aborting due to failed RFC 5782 (section 5) test for RBL '%s'", trbl)
+        print("Aborting due to failed RFC 5782 (section 5) test for RBL '" + trbl + "'")
+        sys.exit(127)
+
+LOGIT.info("All specified RBLs are operational and passed RFC 5782 (section 5) test - excellent. Waiting for input...")
 # read domain names or IP addresses from STDIN in a while loop, and do RBL lookups
 # for every valid domin or IP address. In case it is not listed in RBL, ERR is returned.
 # BH is returned if input was invalid. Otherwise, return string is OK.

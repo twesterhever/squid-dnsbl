@@ -19,9 +19,9 @@ import logging
 import logging.handlers
 import dns.resolver
 
-# Initialise logging (to "/dev/log" for level WARNING by default)
+# Initialise logging (to "/dev/log" for level INFO by default)
 LOGIT = logging.getLogger('squid-dnsbl-helper')
-LOGIT.setLevel(logging.WARNING)
+LOGIT.setLevel(logging.INFO)
 
 SYSLOGH = logging.handlers.SysLogHandler(address="/dev/log")
 LOGIT.addHandler(SYSLOGH)
@@ -74,6 +74,37 @@ def is_valid_domain(chkdomain: str):
     return True
 
 
+def test_rbl_rfc5782(uribltdomain: str):
+    """ Function call: test_rbl_rfc5782(URIBL address)
+
+    This function tests if an URIBL works properly according to RFC 5782 (section 5).
+    It specifies an URIBL must not list "invalid", and must list
+    "test" for testing purposes.
+
+    In case of success, a boolean True is returned, and False otherwise."""
+
+    # test if "invalid" is not listed
+    try:
+        RESOLVER.query("invalid." + uribltdomain, 'A')
+    except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
+        LOGIT.debug("URIBL '%s' is not listing testpoint address 'invalid' - good", uribltdomain)
+    else:
+        LOGIT.error("URIBL '%s' is violating RFC 5782 (section 5) as it lists 'invalid'", uribltdomain)
+        return False
+
+    # test if "test" is listed
+    try:
+        RESOLVER.query("test." + uribltdomain, 'A')
+    except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
+        LOGIT.error("URIBL '%s' is violating RFC 5782 (section 5) as it does not list 'test'", uribltdomain)
+        return False
+    else:
+        LOGIT.debug("URIBL '%s' is listing testpoint address 'test' - good", uribltdomain)
+
+    LOGIT.info("URIBL '%s' seems to be operational and compliant to RFC 5782 (section 5) - good", uribltdomain)
+    return True
+
+
 # test if DNSBL URI is a valid domain...
 try:
     if not sys.argv[1]:
@@ -96,6 +127,15 @@ RESOLVER = dns.resolver.Resolver()
 # set timeout for resolving
 RESOLVER.timeout = 2
 
+# test if specified URIBLs work correctly (according to RFC 5782 [section 5])...
+for turibl in URIBLDOMAIN:
+    if not test_rbl_rfc5782(turibl):
+        # in this case, an URIBL has failed the test...
+        LOGIT.error("Aborting due to failed RFC 5782 (section 5) test for URIBL '%s'", turibl)
+        print("Aborting due to failed RFC 5782 (section 5) test for URIBL '" + turibl + "'")
+        sys.exit(127)
+
+LOGIT.info("All specified URIBLs are operational and passed RFC 5782 (section 5) test - excellent. Waiting for input...")
 # read domain names from STDIN in a while loop, and do URIBL lookups
 # for every valid domin. In case it is not listed in URIBL, ERR is returned.
 # BH is returned if input was invalid. Otherwise, return string is OK.
