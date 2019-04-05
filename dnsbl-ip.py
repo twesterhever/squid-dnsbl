@@ -197,13 +197,20 @@ while True:
         for udomain in RBLDOMAIN:
             for idx, qip in enumerate(IPS):
                 try:
-                    RESOLVER.query((build_reverse_ip(qip) + "." + udomain), 'A')
+                    answer = RESOLVER.query((build_reverse_ip(qip) + "." + udomain), 'A')
                 except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
                     qfailed = True
                 else:
                     print("OK")
                     qfailed = False
-                    LOGIT.warning("RBL hit on %s.%s", build_reverse_ip(qip), udomain)
+
+                    # concatenate responses and log them...
+                    responses = ""
+                    for rdata in answer:
+                        responses = responses + str(rdata) + " "
+
+                    LOGIT.warning("RBL hit on '%s.%s' with response '%s'",
+                                  build_reverse_ip(qip), udomain, responses.strip())
                     break
             else:
                 continue

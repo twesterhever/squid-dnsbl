@@ -166,13 +166,20 @@ while True:
     # are also handled here
     for udomain in URIBLDOMAIN:
         try:
-            RESOLVER.query((QUERYDOMAIN + "." + udomain), 'A')
+            answer = RESOLVER.query((QUERYDOMAIN + "." + udomain), 'A')
         except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
             qfailed = True
         else:
             print("OK")
             qfailed = False
-            LOGIT.warning("URIBL hit on %s.%s", QUERYDOMAIN, udomain)
+
+            # concatenate responses and log them...
+            responses = ""
+            for rdata in answer:
+                responses = responses + str(rdata) + " "
+
+            LOGIT.warning("URIBL hit on '%s.%s' with response '%s'",
+                          QUERYDOMAIN, udomain, responses.strip())
             break
 
     if qfailed:
