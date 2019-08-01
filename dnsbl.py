@@ -15,16 +15,21 @@ the script uses all of them."""
 import ipaddress
 import re
 import sys
+import os.path
 import logging
 import logging.handlers
 import dns.resolver
 
-# Initialise logging (to "/dev/log" for level INFO by default)
+# Initialise logging (to "/dev/log" - or STDERR if unavailable - for level INFO by default)
 LOGIT = logging.getLogger('squid-dnsbl-helper')
 LOGIT.setLevel(logging.INFO)
 
-SYSLOGH = logging.handlers.SysLogHandler(address="/dev/log")
-LOGIT.addHandler(SYSLOGH)
+if os.path.islink("/dev/log"):
+    HANDLER = logging.handlers.SysLogHandler(address="/dev/log")
+else:
+    HANDLER = logging.StreamHandler(stream=sys.stderr)
+
+LOGIT.addHandler(HANDLER)
 
 URIBLDOMAIN = []
 
