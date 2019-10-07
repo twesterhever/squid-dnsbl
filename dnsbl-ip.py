@@ -91,19 +91,23 @@ def resolve_addresses(domain: str):
         return None
 
     # enumerate IPv6 addresses...
+    ip6a = []
     try:
-        ip6a = str(RESOLVER.query(domain, 'AAAA')[0])
+        for resolvedip in RESOLVER.query(domain, 'AAAA'):
+            ip6a.append(str(resolvedip))
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
-        ip6a = ""
+        pass
 
     # enumerate IPv4 addresses...
+    ip4a = []
     try:
-        ip4a = str(RESOLVER.query(domain, 'A')[0])
+        for resolvedip in RESOLVER.query(domain, 'A'):
+            ip4a.append(str(resolvedip))
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
-        ip4a = ""
+        pass
 
     # assemble all IP addresses and return them back
-    ips = (ip6a + " " + ip4a).split()
+    ips = ip6a + ip4a
     return ips
 
 
