@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3 -u
+#!/usr/bin/env -S python3 -u
 # -*- coding: utf-8 -*-
 
 """ dnsbl-ip [.py]
