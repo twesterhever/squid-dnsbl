@@ -9,7 +9,8 @@ so, a DNS query is performed for any resolved IP address and its
 result enumerated. IP adresses are checked agains RBL directly.
 
 In case multiple RBL URIs are given as command line arguments,
-the script uses all of them."""
+the script uses all of them. Additional blacklist information is
+passed via keywords, e.g. for using it in custom built error pages. """
 
 # Import needed packages
 import ipaddress
@@ -21,6 +22,19 @@ import logging.handlers
 import dns.resolver
 
 # *** Define constants and settings... ***
+
+# If desired, a mapping of DNS return values to human readable
+# strings can be specified here. This may be used for displaying
+# the blacklist source to users in order to avoid confusion.
+#
+# Please see the corresponding Squid documentation for further information:
+# http://www.squid-cache.org/Doc/config/external_acl_type/
+#
+# NOTE: This helper stops after first blacklist match. If desired,
+# consider building an aggregated RBL with distinct DNS answers
+# returned all at once.
+RBL_MAP_FILE = "/opt/squid-dnsbl/rblmap"
+RBL_MAP = {}
 
 # Should failing RFC 5782 (section 5) tests result in permanent BH
 # responses (fail close behaviour)? If set to False, an error message
@@ -42,6 +56,18 @@ else:
     HANDLER = logging.StreamHandler(stream=sys.stderr)
 
 LOGIT.addHandler(HANDLER)
+
+if os.path.isfile(RBL_MAP_FILE):
+    with open(RBL_MAP_FILE, "r") as mapfile:
+        mapcontent = mapfile.read().strip()
+
+    # JSON module is needed for loading the dictionary representation into
+    # a dictionary...
+    import json
+
+    RBL_MAP = json.loads(mapcontent)
+    LOGIT.debug("Successfully read RBL map dictionary from %s", RBL_MAP_FILE)
+
 
 RBL_DOMAIN = []
 
@@ -240,11 +266,28 @@ while True:
 
                     # Concatenate responses and log them...
                     responses = ""
+                    rblmapoutput = "blacklist=\""
                     for rdata in answer:
-                        responses = responses + str(rdata) + " "
+                        rdata = str(rdata)
+                        responses = responses + rdata + " "
+
+                        # If a RBL map file is present, the corresponding key to each DNS reply
+                        # is enumerated and passed to Squid via additional keywords...
+                        if RBL_MAP:
+                            try:
+                                rblmapoutput += RBL_MAP[rdata] + ", "
+                            except KeyError:
+                                pass
 
                     LOGIT.warning("RBL hit on '%s.%s' with response '%s'",
                                   build_reverse_ip(qip), udomain, responses.strip())
+
+                    if RBL_MAP:
+                        rblmapoutput = rblmapoutput.strip(", ")
+                        rblmapoutput += "\""
+                        print("OK", rblmapoutput)
+                    else:
+                        print("OK")
                     break
             else:
                 continue

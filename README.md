@@ -55,6 +55,8 @@ connection attempts to dynamic IP ranges will be blocked, too.
 
 ## Advanced Settings
 
+### Passing human-readable blacklist string to error pages
+
 ### Handling of failed RFC 5782 (section 5) tests
 
 ## Example Squid configuration
