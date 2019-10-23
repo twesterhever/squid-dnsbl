@@ -31,7 +31,7 @@ else:
 
 LOGIT.addHandler(HANDLER)
 
-URIBLDOMAIN = []
+URIBL_DOMAIN = []
 
 
 def is_ipaddress(chkinput: str):
@@ -54,26 +54,26 @@ def is_valid_domain(chkdomain: str):
     unspecified characters. It returns True if a domain was valid,
     and False if not."""
 
-    # test if chkdomain is an IP address (should not happen here)
+    # Test if chkdomain is an IP address (should not happen here)
     if is_ipaddress(chkdomain):
         return False
 
-    # allowed characters
+    # Allowed characters
     allowedchars = re.compile(r"(?!-)[a-z\d\-\_]{1,63}(?<!-)$", re.IGNORECASE)
 
     if len(chkdomain) > 255 or "." not in chkdomain:
-        # do not allow domains which are very long or do not contain a dot
+        # Do not allow domains which are very long or do not contain a dot
         return False
 
     if chkdomain[-1] == ".":
-        # strip trailing "." if present
+        # Strip trailing "." if present
         chkdomain = chkdomain[:-1]
 
-    # check if sublabels are invalid (i.e. are empty, too long or contain
+    # Check if sublabels are invalid (i.e. are empty, too long or contain
     # invalid characters)
     for sublabel in chkdomain.split("."):
         if not sublabel or not allowedchars.match(sublabel):
-            # sublabel is invalid
+            # Sublabel is invalid
             return False
 
     return True
@@ -88,7 +88,7 @@ def test_rbl_rfc5782(uribltdomain: str):
 
     In case of success, a boolean True is returned, and False otherwise."""
 
-    # test if "invalid" is not listed
+    # Test if "invalid" is not listed
     try:
         RESOLVER.query("invalid." + uribltdomain, 'A')
     except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
@@ -97,7 +97,7 @@ def test_rbl_rfc5782(uribltdomain: str):
         LOGIT.error("URIBL '%s' is violating RFC 5782 (section 5) as it lists 'invalid'", uribltdomain)
         return False
 
-    # test if "test" is listed
+    # Test if "test" is listed
     try:
         RESOLVER.query("test." + uribltdomain, 'A')
     except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
@@ -110,7 +110,7 @@ def test_rbl_rfc5782(uribltdomain: str):
     return True
 
 
-# test if DNSBL URI is a valid domain...
+# Test if DNSBL URI is a valid domain...
 try:
     if not sys.argv[1]:
         print("BH")
@@ -124,16 +124,16 @@ for tdomain in sys.argv[1:]:
         print("BH")
         sys.exit(127)
     else:
-        URIBLDOMAIN.append(tdomain.strip(".") + ".")
+        URIBL_DOMAIN.append(tdomain.strip(".") + ".")
 
-# set up resolver object
+# Set up resolver object
 RESOLVER = dns.resolver.Resolver()
 
-# set timeout for resolving
+# Set timeout for resolving
 RESOLVER.timeout = 2
 
-# test if specified URIBLs work correctly (according to RFC 5782 [section 5])...
 for turibl in URIBLDOMAIN:
+# Test if specified URIBLs work correctly (according to RFC 5782 [section 5])...
     if not test_rbl_rfc5782(turibl):
         # in this case, an URIBL has failed the test...
         LOGIT.error("Aborting due to failed RFC 5782 (section 5) test for URIBL '%s'", turibl)
@@ -141,7 +141,7 @@ for turibl in URIBLDOMAIN:
         sys.exit(127)
 
 LOGIT.info("All specified URIBLs are operational and passed RFC 5782 (section 5) test - excellent. Waiting for input...")
-# read domain names from STDIN in a while loop, and do URIBL lookups
+# Read domain names from STDIN in a while loop, and do URIBL lookups
 # for every valid domin. In case it is not listed in URIBL, ERR is returned.
 # BH is returned if input was invalid. Otherwise, return string is OK.
 while True:
@@ -150,26 +150,26 @@ while True:
     except KeyboardInterrupt:
         sys.exit(127)
 
-    # abort if domain was empty (no STDIN input received)
+    # Abort if domain was empty (no STDIN input received)
     if not QUERYDOMAIN:
         break
 
-    # check if input is an IP address (we need to return ERR in such
+    # Check if input is an IP address (we need to return ERR in such
     # cases, as most URIBLs are unable to handle them, and BH will result
     # in blocking direct IP communication)
     if is_ipaddress(QUERYDOMAIN):
         print("ERR")
         continue
 
-    # check if it is a valid domain
+    # Check if it is a valid domain
     if not is_valid_domain(QUERYDOMAIN):
         print("BH")
         continue
 
-    # test if an A record can be found for this domain
+    # Test if an A record can be found for this domain
     # some exceptions in case of invalid domains (label too long, or empty)
     # are also handled here
-    for udomain in URIBLDOMAIN:
+    for udomain in URIBL_DOMAIN:
         try:
             answer = RESOLVER.query((QUERYDOMAIN + "." + udomain), 'A')
         except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
@@ -178,7 +178,7 @@ while True:
             print("OK")
             qfailed = False
 
-            # concatenate responses and log them...
+            # Concatenate responses and log them...
             responses = ""
             for rdata in answer:
                 responses = responses + str(rdata) + " "

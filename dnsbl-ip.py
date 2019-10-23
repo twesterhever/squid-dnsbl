@@ -31,7 +31,7 @@ else:
 
 LOGIT.addHandler(HANDLER)
 
-RBLDOMAIN = []
+RBL_DOMAIN = []
 
 
 def is_valid_domain(chkdomain: str):
@@ -41,18 +41,18 @@ def is_valid_domain(chkdomain: str):
     unspecified characters. It returns True if a domain was valid,
     and False if not."""
 
-    # allowed characters
+    # Allowed characters
     allowedchars = re.compile(r"(?!-)[a-z\d\-\_]{1,63}(?<!-)$", re.IGNORECASE)
 
     if len(chkdomain) > 255 or "." not in chkdomain:
-        # do not allow domains which are very long or do not contain a dot
+        # Do not allow domains which are very long or do not contain a dot
         return False
 
     if chkdomain[-1] == ".":
-        # strip trailing "." if present
+        # Strip trailing "." if present
         chkdomain = chkdomain[:-1]
 
-    # check if sublabels are invalid (i.e. are empty, too long or contain
+    # Check if sublabels are invalid (i.e. are empty, too long or contain
     # invalid characters)
     for sublabel in chkdomain.split("."):
         if not sublabel or not allowedchars.match(sublabel):
@@ -72,11 +72,11 @@ def build_reverse_ip(ipaddr):
     addr = ipaddress.ip_address(ipaddr)
 
     if addr.version == 6 or addr.version == 4:
-        # in this case, we are dealing with an IP address
+        # In this case, we are dealing with an IP address
         rev = '.'.join(addr.reverse_pointer.split('.')[:-2])
         return rev
 
-    # in this case, we are dealing with a martian
+    # In this case, we are dealing with a martian
     return None
 
 
@@ -86,11 +86,11 @@ def resolve_addresses(domain: str):
     This function takes a domain and enumerates all IPv4 and IPv6
     records for it. They are returned as an array."""
 
-    # check if this is a valid domain...
+    # Check if this is a valid domain...
     if not is_valid_domain(domain):
         return None
 
-    # enumerate IPv6 addresses...
+    # Enumerate IPv6 addresses...
     ip6a = []
     try:
         for resolvedip in RESOLVER.query(domain, 'AAAA'):
@@ -98,7 +98,7 @@ def resolve_addresses(domain: str):
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers):
         pass
 
-    # enumerate IPv4 addresses...
+    # Enumerate IPv4 addresses...
     ip4a = []
     try:
         for resolvedip in RESOLVER.query(domain, 'A'):
@@ -106,7 +106,7 @@ def resolve_addresses(domain: str):
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers):
         pass
 
-    # assemble all IP addresses and return them back
+    # Assemble all IP addresses and return them back
     ips = ip6a + ip4a
     return ips
 
@@ -123,7 +123,7 @@ def test_rbl_rfc5782(rbltdomain: str):
 
     In case of success, a boolean True is returned, and False otherwise."""
 
-    # test if 127.0.0.1 is not listed
+    # Test if 127.0.0.1 is not listed
     try:
         RESOLVER.query((build_reverse_ip("127.0.0.1") + "." + rbltdomain), 'A')
     except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
@@ -132,7 +132,7 @@ def test_rbl_rfc5782(rbltdomain: str):
         LOGIT.error("RBL '%s' is violating RFC 5782 (section 5) as it lists 127.0.0.1", rbltdomain)
         return False
 
-    # test if 127.0.0.2 is listed
+    # Test if 127.0.0.2 is listed
     try:
         RESOLVER.query((build_reverse_ip("127.0.0.2") + "." + rbltdomain), 'A')
     except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
@@ -145,7 +145,7 @@ def test_rbl_rfc5782(rbltdomain: str):
     return True
 
 
-# test if DNSBL URI is a valid domain...
+# Test if DNSBL URI is a valid domain...
 try:
     if not sys.argv[1]:
         print("BH")
@@ -159,16 +159,16 @@ for tdomain in sys.argv[1:]:
         print("BH")
         sys.exit(127)
     else:
-        RBLDOMAIN.append(tdomain.strip(".") + ".")
+        RBL_DOMAIN.append(tdomain.strip(".") + ".")
 
-# set up resolver object
+# Set up resolver object
 RESOLVER = dns.resolver.Resolver()
 
-# set timeout for resolving
+# Set timeout for resolving
 RESOLVER.timeout = 2
 
-# test if specified RBLs work correctly (according to RFC 5782 [section 5])...
 for trbl in RBLDOMAIN:
+# Test if specified RBLs work correctly (according to RFC 5782 [section 5])...
     if not test_rbl_rfc5782(trbl):
         # in this case, an RBL has failed the test...
         LOGIT.error("Aborting due to failed RFC 5782 (section 5) test for RBL '%s'", trbl)
@@ -176,7 +176,7 @@ for trbl in RBLDOMAIN:
         sys.exit(127)
 
 LOGIT.info("All specified RBLs are operational and passed RFC 5782 (section 5) test - excellent. Waiting for input...")
-# read domain names or IP addresses from STDIN in a while loop, and do RBL lookups
+# Read domain names or IP addresses from STDIN in a while loop, and do RBL lookups
 # for every valid domin or IP address. In case it is not listed in RBL, ERR is returned.
 # BH is returned if input was invalid. Otherwise, return string is OK.
 while True:
@@ -185,7 +185,7 @@ while True:
     except KeyboardInterrupt:
         sys.exit(127)
 
-    # abort if query string was empty (no STDIN input received)
+    # Abort if query string was empty (no STDIN input received)
     if not QSTRING:
         break
 
@@ -193,27 +193,26 @@ while True:
     try:
         IPS = [ipaddress.ip_address(QSTRING)]
     except (ValueError, AttributeError):
-        # in this case, we are probably dealing with a domain
+        # In this case, we are probably dealing with a domain
         IPS = resolve_addresses(QSTRING)
 
-    # check if we have some IP addresses to lookup for...
+    # Check if we have some IP addresses to lookup for...
     if not IPS:
         print("BH")
     else:
-        # query each IP address against RBL and enumerate output...
+        # Query each IP address against RBL and enumerate output...
         qfailed = False
 
-        for udomain in RBLDOMAIN:
+        for udomain in RBL_DOMAIN:
             for idx, qip in enumerate(IPS):
                 try:
                     answer = RESOLVER.query((build_reverse_ip(qip) + "." + udomain), 'A')
                 except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
                     qfailed = True
                 else:
-                    print("OK")
                     qfailed = False
 
-                    # concatenate responses and log them...
+                    # Concatenate responses and log them...
                     responses = ""
                     for rdata in answer:
                         responses = responses + str(rdata) + " "
