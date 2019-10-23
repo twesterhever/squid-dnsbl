@@ -82,3 +82,4 @@ would be misleading.
 ## Further Readings
 * [Statistics concerning hit and FP rate of blacklists](https://www.intra2net.com/en/support/antispam/index.php_sort=type_order=desc.html)
 * [Comparison of DNS blacklists](https://en.wikipedia.org/wiki/Comparison_of_DNS_blacklists)
+* [Corresponding Squid documentation](http://www.squid-cache.org/Doc/config/external_acl_type/)
