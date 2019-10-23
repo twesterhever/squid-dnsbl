@@ -53,6 +53,10 @@ Be careful in your RBL choice: For example, if the
 [Spamhaus ZEN](https://www.spamhaus.org/zen/) RBL is used,
 connection attempts to dynamic IP ranges will be blocked, too.
 
+## Advanced Settings
+
+### Handling of failed RFC 5782 (section 5) tests
+
 ## Example Squid configuration
 In order to use the scripts in a Squid config, you will
 need to set up a separate ACL for both of them, defining

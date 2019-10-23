@@ -20,6 +20,18 @@ import logging
 import logging.handlers
 import dns.resolver
 
+# *** Define constants and settings... ***
+
+# Should failing RFC 5782 (section 5) tests result in permanent BH
+# responses (fail close behaviour)? If set to False, an error message
+# is logged and the scripts continues to send DNS queries to the RBL.
+#
+# WARNING: You are strongly advised not to set this to False! Doing
+# so is a security risk, as an attacker or outage might render the RBL
+# FQDN permanently unusable, provoking a silent fail open behaviour.
+RETURN_BH_ON_FAILED_RFC_TEST = True
+
+
 # Initialise logging (to "/dev/log" - or STDERR if unavailable - for level INFO by default)
 LOGIT = logging.getLogger('squid-dnsbl-helper')
 LOGIT.setLevel(logging.INFO)
@@ -132,13 +144,22 @@ RESOLVER = dns.resolver.Resolver()
 # Set timeout for resolving
 RESOLVER.timeout = 2
 
-for turibl in URIBLDOMAIN:
 # Test if specified URIBLs work correctly (according to RFC 5782 [section 5])...
+PASSED_RFC_TEST = True
+for turibl in URIBL_DOMAIN:
     if not test_rbl_rfc5782(turibl):
         # in this case, an URIBL has failed the test...
-        LOGIT.error("Aborting due to failed RFC 5782 (section 5) test for URIBL '%s'", turibl)
-        print("Aborting due to failed RFC 5782 (section 5) test for URIBL '" + turibl + "'")
-        sys.exit(127)
+        LOGIT.warning("RFC 5782 (section 5) test for URIBL '%s' failed", turibl)
+        PASSED_RFC_TEST = False
+
+# Depending on the configuration at the beginning of this script, further
+# queries will or will not result in BH every time. Adjust log messages...
+if RETURN_BH_ON_FAILED_RFC_TEST:
+    LOGIT.error("Aborting due to failed RFC 5782 (section 5) test for URIBL")
+else:
+    LOGIT.warning("There were failed RFC 5782 (section 5) URIBL tests. Possible fail open provocation, resuming normal operation, you have been warned...")
+    PASSED_RFC_TEST = True
+
 
 LOGIT.info("All specified URIBLs are operational and passed RFC 5782 (section 5) test - excellent. Waiting for input...")
 # Read domain names from STDIN in a while loop, and do URIBL lookups
@@ -153,6 +174,11 @@ while True:
     # Abort if domain was empty (no STDIN input received)
     if not QUERYDOMAIN:
         break
+
+    # Immediately return BH if configuration requires to do so...
+    if RETURN_BH_ON_FAILED_RFC_TEST and not PASSED_RFC_TEST:
+        print("BH")
+        continue
 
     # Check if input is an IP address (we need to return ERR in such
     # cases, as most URIBLs are unable to handle them, and BH will result

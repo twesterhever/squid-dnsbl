@@ -20,6 +20,18 @@ import logging
 import logging.handlers
 import dns.resolver
 
+# *** Define constants and settings... ***
+
+# Should failing RFC 5782 (section 5) tests result in permanent BH
+# responses (fail close behaviour)? If set to False, an error message
+# is logged and the scripts continues to send DNS queries to the RBL.
+#
+# WARNING: You are strongly advised not to set this to False! Doing
+# so is a security risk, as an attacker or outage might render the RBL
+# FQDN permanently unusable, provoking a silent fail open behaviour.
+RETURN_BH_ON_FAILED_RFC_TEST = True
+
+
 # Initialise logging (to "/dev/log" - or STDERR if unavailable - for level INFO by default)
 LOGIT = logging.getLogger('squid-dnsbl-helper')
 LOGIT.setLevel(logging.INFO)
@@ -167,13 +179,22 @@ RESOLVER = dns.resolver.Resolver()
 # Set timeout for resolving
 RESOLVER.timeout = 2
 
-for trbl in RBLDOMAIN:
 # Test if specified RBLs work correctly (according to RFC 5782 [section 5])...
+PASSED_RFC_TEST = True
+for trbl in RBL_DOMAIN:
     if not test_rbl_rfc5782(trbl):
-        # in this case, an RBL has failed the test...
-        LOGIT.error("Aborting due to failed RFC 5782 (section 5) test for RBL '%s'", trbl)
-        print("Aborting due to failed RFC 5782 (section 5) test for RBL '" + trbl + "'")
-        sys.exit(127)
+        # In this case, an RBL has failed the test...
+        LOGIT.warning("RFC 5782 (section 5) test for RBL '%s' failed", trbl)
+        PASSED_RFC_TEST = False
+
+# Depending on the configuration at the beginning of this script, further
+# queries will or will not result in BH every time. Adjust log messages...
+if RETURN_BH_ON_FAILED_RFC_TEST:
+    LOGIT.error("Aborting due to failed RFC 5782 (section 5) test for RBL")
+else:
+    LOGIT.warning("There were failed RFC 5782 (section 5) RBL tests. Possible fail open provocation, resuming normal operation, you have been warned...")
+    PASSED_RFC_TEST = True
+
 
 LOGIT.info("All specified RBLs are operational and passed RFC 5782 (section 5) test - excellent. Waiting for input...")
 # Read domain names or IP addresses from STDIN in a while loop, and do RBL lookups
@@ -189,7 +210,12 @@ while True:
     if not QSTRING:
         break
 
-    # enumerate whether query string is a domain or an IP address...
+    # Immediately return BH if configuration requires to do so...
+    if RETURN_BH_ON_FAILED_RFC_TEST and not PASSED_RFC_TEST:
+        print("BH")
+        continue
+
+    # Enumerate whether query string is a domain or an IP address...
     try:
         IPS = [ipaddress.ip_address(QSTRING)]
     except (ValueError, AttributeError):
