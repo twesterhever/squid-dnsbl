@@ -1,0 +1,6 @@
+{"127.0.0.2": "Spamhaus SBL",
+ "127.0.0.3": "Spamhaus SBL CSS",
+ "127.0.0.4": "Spamhaus XBL",
+ "127.0.0.9": "Spamhaus DROP/EDROP",
+ "127.0.0.10": "Spamhaus PBL (ISP maintained)",
+ "127.0.0.11": "Spamhaus PBL (Spamhaus maintained)"}
