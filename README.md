@@ -54,10 +54,41 @@ Be careful in your RBL choice: For example, if the
 connection attempts to dynamic IP ranges will be blocked, too.
 
 ## Advanced Settings
+There are some settings for advanced usage of these DNSBL helpers. In
+order to avoid configuration file complexity (reading, parsing, etc.),
+these settings can be changed at the beginning of `dnsbl.py` and `dnsbl-ip.py`.
 
 ### Passing human-readable blacklist string to error pages
+Squid is capable of receiving additional messages from helpers which
+can be displayed on error pages by using the `%o` statement. Refer to
+http://www.squid-cache.org/Doc/config/external_acl_type/ for further information.
+
+In some scenarios, telling the user which blacklists caused a connection
+attempt to be rejected might be desired. To do so, a JSON map can be
+specified by modifiying `RBL_MAP` directly or saved to a file which location
+is passed by `RBL_MAP_FILE`.
+
+Expected JSON map syntax is as follows:
+```
+{"127.0.0.2": "blacklist A",
+ "127.0.0.3": "blacklist B",
+ "127.0.0.250": "our own custom blacklist",
+ ...}
+```
+
+Please note: This helper stops after first blacklist match. If desired,
+consider building an aggregated RBL with distinct DNS answers returned
+all at once (e.g. by running a custom `rbldnsd` instance).
 
 ### Handling of failed RFC 5782 (section 5) tests
+Both DNSBL helpers perform santiy tests as documented in RFC 5782 (section 5)
+to make sure given RBLs and URIBLs are reachable and working correctly. If _any_
+of these tests fail, a helper will simply return `BH` for any domain or IP
+address.
+
+Setting `RETURN_BH_ON_FAILED_RFC_TEST` to `False` enforces normal operation
+of the helpers, but is _strongly discouraged_ as is allows them to fail-open
+silenty.
 
 ## Example Squid configuration
 In order to use the scripts in a Squid config, you will
