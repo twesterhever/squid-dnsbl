@@ -220,14 +220,14 @@ for trbl in RBL_DOMAIN:
 
 # Depending on the configuration at the beginning of this script, further
 # queries will or will not result in BH every time. Adjust log messages...
-if RETURN_BH_ON_FAILED_RFC_TEST:
+if not PASSED_RFC_TEST and RETURN_BH_ON_FAILED_RFC_TEST:
     LOGIT.error("Aborting due to failed RFC 5782 (section 5) test for RBL")
-else:
+elif not PASSED_RFC_TEST:
     LOGIT.warning("There were failed RFC 5782 (section 5) RBL tests. Possible fail open provocation, resuming normal operation, you have been warned...")
     PASSED_RFC_TEST = True
+else:
+    LOGIT.info("All specified RBLs are operational and passed RFC 5782 (section 5) test - excellent. Waiting for input...")
 
-
-LOGIT.info("All specified RBLs are operational and passed RFC 5782 (section 5) test - excellent. Waiting for input...")
 # Read domain names or IP addresses from STDIN in a while loop, and do RBL lookups
 # for every valid domin or IP address. In case it is not listed in RBL, ERR is returned.
 # BH is returned if input was invalid. Otherwise, return string is OK.
