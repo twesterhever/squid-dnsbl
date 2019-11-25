@@ -284,8 +284,8 @@ while True:
                             except KeyError:
                                 pass
 
-                    LOGIT.warning("RBL hit on '%s.%s' with response '%s'",
-                                  build_reverse_ip(qip), udomain, responses.strip())
+                    LOGIT.warning("RBL hit on '%s.%s' with response '%s' (queried destination: '%s')",
+                                  build_reverse_ip(qip), udomain, responses.strip(), QSTRING)
 
                     if RBL_MAP:
                         rblmapoutput = rblmapoutput.strip(", ")
