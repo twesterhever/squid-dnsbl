@@ -19,7 +19,7 @@ might be useful.
 This repository aims to close this gap by providing to Python 3.x
 based scripts which can be accessed by Squid as external helpers.
 In order to work under chrooted Squid instances on BSD,
-`/usr/bin/env -S python3 -u` needs to be changed into `/usr/local/bin/python3`.
+`/usr/bin/env -S python3 -u` needs to be changed into `/usr/local/bin/python3 -u`.
 
 ## dnsbl.py
 This script looks up domains against one or more
