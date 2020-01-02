@@ -255,7 +255,14 @@ while True:
 
     # Check if we have some IP addresses to lookup for...
     if not IPS:
-        print("BH")
+        # ... if not, we'll return ERR instead of BH, since the latter one causes Squid
+        # to display "permission denied" messages to the client, which is confusing.
+        #
+        # ERR is considered to be safe here, as Squid won't be able to establish a
+        # connection anyway, no matter wether the destination is blacklisted or not,
+        # provided both Squid and this script use the same DNS resolver.
+        LOGIT.info("Unable to resolve queried destination '%s', returning ERR...", QSTRING)
+        print("ERR")
     else:
         # Query each IP address against RBL and enumerate output...
         qfailed = False
