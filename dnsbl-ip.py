@@ -259,7 +259,7 @@ while True:
         # to display "permission denied" messages to the client, which is confusing.
         #
         # ERR is considered to be safe here, as Squid won't be able to establish a
-        # connection anyway, no matter wether the destination is blacklisted or not,
+        # connection anyway, no matter whether the destination is blacklisted or not,
         # provided both Squid and this script use the same DNS resolver.
         LOGIT.info("Unable to resolve queried destination '%s', returning ERR...", QSTRING)
         print("ERR")
