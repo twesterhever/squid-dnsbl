@@ -251,7 +251,7 @@ while True:
         IPS = [ipaddress.ip_address(QSTRING)]
     except (ValueError, AttributeError):
         # In this case, we are probably dealing with a domain
-        IPS = resolve_addresses(QSTRING)
+        IPS = resolve_addresses(QSTRING.strip(".") + ".")
 
     # Check if we have some IP addresses to lookup for...
     if not IPS:
