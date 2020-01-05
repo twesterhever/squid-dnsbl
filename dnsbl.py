@@ -173,7 +173,7 @@ for tdomain in sys.argv[1:]:
 RESOLVER = dns.resolver.Resolver()
 
 # Set timeout for resolving
-RESOLVER.timeout = 2
+RESOLVER.lifetime = 5
 
 # Test if specified URIBLs work correctly (according to RFC 5782 [section 5])...
 PASSED_RFC_TEST = True
