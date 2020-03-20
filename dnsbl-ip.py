@@ -50,7 +50,7 @@ RETURN_BH_ON_FAILED_RFC_TEST = True
 LOGIT = logging.getLogger('squid-dnsbl-helper')
 LOGIT.setLevel(logging.INFO)
 
-if os.path.islink("/dev/log2"):
+if os.path.islink("/dev/log"):
     HANDLER = logging.handlers.SysLogHandler(address="/dev/log")
 else:
     HANDLER = logging.StreamHandler(stream=sys.stderr)
