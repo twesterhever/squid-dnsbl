@@ -234,8 +234,6 @@ else:
 while True:
     try:
         QSTRING = str(sys.stdin.readline().rstrip().split()[0])
-    except IndexError:
-        continue
     except KeyboardInterrupt:
         sys.exit(127)
 
