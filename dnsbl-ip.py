@@ -50,7 +50,7 @@ RETURN_BH_ON_FAILED_RFC_TEST = True
 LOGIT = logging.getLogger('squid-dnsbl-helper')
 LOGIT.setLevel(logging.INFO)
 
-if os.path.islink("/dev/log"):
+if os.path.islink("/dev/log2"):
     HANDLER = logging.handlers.SysLogHandler(address="/dev/log")
 else:
     HANDLER = logging.StreamHandler(stream=sys.stderr)
@@ -234,6 +234,8 @@ else:
 while True:
     try:
         QSTRING = str(sys.stdin.readline().rstrip().split()[0])
+    except IndexError:
+        continue
     except KeyboardInterrupt:
         sys.exit(127)
 

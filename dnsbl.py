@@ -199,6 +199,8 @@ else:
 while True:
     try:
         QUERYDOMAIN = str(sys.stdin.readline().rstrip().split()[0])
+    except IndexError:
+        continue
     except KeyboardInterrupt:
         sys.exit(127)
 
