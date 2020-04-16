@@ -85,7 +85,7 @@ Expected JSON map syntax is as follows:
 }
 ```
 
-Please note: This helper stops after first blacklist match. If desired,
+Please note: The helpers stops after first blacklist match. If desired,
 consider building an aggregated RBL with distinct DNS answers returned
 all at once (e.g. by running a custom [`rbldnsd`](https://www.corpit.ru/mjt/rbldnsd.html)
 instance).
