@@ -65,15 +65,24 @@ http://www.squid-cache.org/Doc/config/external_acl_type/ for further information
 
 In some scenarios, telling the user which blacklists caused a connection
 attempt to be rejected might be desired. To do so, a JSON map can be
-specified by modifiying `RBL_MAP` directly or saved to a file which location
-is passed by `RBL_MAP_FILE`.
+specified by modifiying `RBL_MAP`/`URIBL_MAP` directly or saved to a file
+which location is passed by `RBL_MAP_FILE`/`URIBL_MAP_FILE`.
 
 Expected JSON map syntax is as follows:
 ```
-{"127.0.0.2": "blacklist A",
- "127.0.0.3": "blacklist B",
- "127.0.0.250": "our own custom blacklist",
- ...}
+{
+  "FQDN of blacklist A (without any terminal dot)": {
+    "127.0.0.2": "blacklist A category 1",
+    "127.0.0.3": "blacklist A category 2",
+    ...
+  },
+  "FQDN of blacklist B (without any terminal dot)": {
+    "127.0.0.2": "blacklist B category 1",
+    ...
+    "127.0.0.250": "blacklist B category 250"
+  },
+  ...
+}
 ```
 
 Please note: This helper stops after first blacklist match. If desired,
