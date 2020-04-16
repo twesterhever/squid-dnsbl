@@ -45,6 +45,15 @@ URIBL_MAP = {}
 # FQDN permanently unusable, provoking a silent fail open behaviour.
 RETURN_BH_ON_FAILED_RFC_TEST = True
 
+# NOTE: While RBLs passing RFC 5782 (section 5) test can be considered operational,
+# at least on a very basic level, this is not sufficient for URIBLs as it does
+# not detect strict QNAME minimization being in use on the DNS resolver configured.
+#
+# Strict QNAME minimization, particular in combination with stub-zones, effectively
+# renders DNSBLs unusable and cannot be reliably detected by RFC 5782 (section 5)
+# tests against URIBLs. You are therefore _strongly_ encouraged not to enable
+# strict QNAME minimization.
+
 
 # Initialise logging (to "/dev/log" - or STDERR if unavailable - for level INFO by default)
 LOGIT = logging.getLogger('squid-dnsbl-helper')
