@@ -101,6 +101,16 @@ Setting `RETURN_BH_ON_FAILED_RFC_TEST` to `False` enforces normal operation
 of the helpers, but is _strongly discouraged_ as is allows them to fail-open
 silenty.
 
+While RBLs passing RFC 5782 (section 5) test can be considered operational,
+at least on a very basic level, this is not sufficient for URIBLs as it does
+not detect strict [QNAME minimization](https://tools.ietf.org/html/rfc7816)
+being in use on the DNS resolver configured.
+
+Strict QNAME minimization, particular in combination with `stub-zones`, effectively
+renders DNSBLs unusable and cannot be reliably detected by RFC 5782 (section 5)
+tests against URIBLs. You are therefore _strongly_ encouraged not to enable
+strict QNAME minimization.
+
 ## Example Squid configuration
 In order to use the scripts in a Squid config, you will
 need to set up a separate ACL for both of them, defining
