@@ -78,7 +78,8 @@ Expected JSON map syntax is as follows:
 
 Please note: This helper stops after first blacklist match. If desired,
 consider building an aggregated RBL with distinct DNS answers returned
-all at once (e.g. by running a custom `rbldnsd` instance).
+all at once (e.g. by running a custom [`rbldnsd`](https://www.corpit.ru/mjt/rbldnsd.html)
+instance).
 
 ### Handling of failed RFC 5782 (section 5) tests
 Both DNSBL helpers perform santiy tests as documented in RFC 5782 (section 5)
