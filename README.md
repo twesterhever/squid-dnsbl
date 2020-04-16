@@ -91,8 +91,9 @@ all at once (e.g. by running a custom [`rbldnsd`](https://www.corpit.ru/mjt/rbld
 instance).
 
 ### Handling of failed RFC 5782 (section 5) tests
-Both DNSBL helpers perform santiy tests as documented in RFC 5782 (section 5)
-to make sure given RBLs and URIBLs are reachable and working correctly. If _any_
+Both DNSBL helpers perform santiy tests as documented in
+[RFC 5782 (section 5)](https://tools.ietf.org/html/rfc5782#section-5) to make
+sure given RBLs and URIBLs are reachable and working correctly. If _any_
 of these tests fail, a helper will simply return `BH` for any domain or IP
 address.
 
