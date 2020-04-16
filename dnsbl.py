@@ -242,10 +242,10 @@ while True:
                 responses = responses + rdata + " "
 
                 # If a URIBL map file is present, the corresponding key to each DNS reply
-                # is enumerated and passed to Squid via additional keywords...
+                # for this URIBL is enumerated and passed to Squid via additional keywords...
                 if URIBL_MAP:
                     try:
-                        rblmapoutput += URIBL_MAP[rdata] + ", "
+                        rblmapoutput += URIBL_MAP[udomain.strip(".")][rdata] + ", "
                     except KeyError:
                         pass
 

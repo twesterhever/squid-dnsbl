@@ -284,10 +284,10 @@ while True:
                         responses = responses + rdata + " "
 
                         # If a RBL map file is present, the corresponding key to each DNS reply
-                        # is enumerated and passed to Squid via additional keywords...
+                        # for this RBL is enumerated and passed to Squid via additional keywords...
                         if RBL_MAP:
                             try:
-                                rblmapoutput += RBL_MAP[rdata] + ", "
+                                rblmapoutput += RBL_MAP[udomain.strip(".")][rdata] + ", "
                             except KeyError:
                                 pass
 
