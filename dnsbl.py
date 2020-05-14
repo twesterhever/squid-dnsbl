@@ -253,7 +253,7 @@ while True:
             LOGIT.warning("URIBL '%s' failed to answer query for '%s' within %s seconds, returning 'BH'",
                           udomain, QUERYDOMAIN, RESOLVER.lifetime)
             print("BH")
-            continue
+            break
         else:
             qfailed = False
 

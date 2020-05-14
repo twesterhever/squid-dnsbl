@@ -285,7 +285,7 @@ while True:
                     LOGIT.warning("RBL '%s' failed to answer query for '%s' within %s seconds, returning 'BH'",
                                   udomain, build_reverse_ip(qip), RESOLVER.lifetime)
                     print("BH")
-                    continue
+                    break
                 else:
                     qfailed = False
 
