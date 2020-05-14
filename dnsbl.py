@@ -259,7 +259,7 @@ while True:
 
             # Concatenate responses and log them...
             responses = ""
-            rblmapoutput = "blacklist=\""
+            uriblmapoutput = "blacklist=\""
             for rdata in answer:
                 rdata = str(rdata)
                 responses = responses + rdata + " "
@@ -268,7 +268,7 @@ while True:
                 # for this URIBL is enumerated and passed to Squid via additional keywords...
                 if URIBL_MAP:
                     try:
-                        rblmapoutput += URIBL_MAP[udomain.strip(".")][rdata] + ", "
+                        uriblmapoutput += URIBL_MAP[udomain.strip(".")][rdata] + ", "
                     except KeyError:
                         pass
 
