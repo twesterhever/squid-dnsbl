@@ -171,6 +171,10 @@ def test_rbl_rfc5782(rbltdomain: str):
         RESOLVER.query((build_reverse_ip("127.0.0.1") + "." + rbltdomain), 'A')
     except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
         LOGIT.debug("RBL '%s' is not listing testpoint address 127.0.0.1 - good", rbltdomain)
+    except dns.exception.Timeout:
+        LOGIT.warning("RBL '%s' failed to answer RFC 5782 (section 5) test query for '127.0.0.1' within %s seconds",
+                      rbltdomain, RESOLVER.lifetime)
+        return False
     else:
         LOGIT.error("RBL '%s' is violating RFC 5782 (section 5) as it lists 127.0.0.1", rbltdomain)
         return False
@@ -180,6 +184,10 @@ def test_rbl_rfc5782(rbltdomain: str):
         RESOLVER.query((build_reverse_ip("127.0.0.2") + "." + rbltdomain), 'A')
     except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
         LOGIT.error("RBL '%s' is violating RFC 5782 (section 5) as it does not list 127.0.0.2", rbltdomain)
+        return False
+    except dns.exception.Timeout:
+        LOGIT.warning("RBL '%s' failed to answer RFC 5782 (section 5) test query for '127.0.0.2' within %s seconds",
+                      rbltdomain, RESOLVER.lifetime)
         return False
     else:
         LOGIT.debug("RBL '%s' is listing testpoint address 127.0.0.2 - good", rbltdomain)
@@ -273,6 +281,11 @@ while True:
                     answer = RESOLVER.query((build_reverse_ip(qip) + "." + udomain), 'A')
                 except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
                     qfailed = True
+                except dns.exception.Timeout:
+                    LOGIT.warning("RBL '%s' failed to answer query for '%s' within %s seconds, returning 'BH'",
+                                  udomain, build_reverse_ip(qip), RESOLVER.lifetime)
+                    print("BH")
+                    continue
                 else:
                     qfailed = False
 

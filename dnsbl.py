@@ -145,6 +145,10 @@ def test_rbl_rfc5782(uribltdomain: str):
         RESOLVER.query("invalid." + uribltdomain, 'A')
     except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
         LOGIT.debug("URIBL '%s' is not listing testpoint address 'invalid' - good", uribltdomain)
+    except dns.exception.Timeout:
+        LOGIT.warning("URIBL '%s' failed to answer RFC 5782 (section 5) test query for 'invalid' within %s seconds",
+                      uribltdomain, RESOLVER.lifetime)
+        return False
     else:
         LOGIT.error("URIBL '%s' is violating RFC 5782 (section 5) as it lists 'invalid'", uribltdomain)
         return False
@@ -154,6 +158,10 @@ def test_rbl_rfc5782(uribltdomain: str):
         RESOLVER.query("test." + uribltdomain, 'A')
     except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
         LOGIT.error("URIBL '%s' is violating RFC 5782 (section 5) as it does not list 'test'", uribltdomain)
+        return False
+    except dns.exception.Timeout:
+        LOGIT.warning("URIBL '%s' failed to answer RFC 5782 (section 5) test query for 'test' within %s seconds",
+                      uribltdomain, RESOLVER.lifetime)
         return False
     else:
         LOGIT.debug("URIBL '%s' is listing testpoint address 'test' - good", uribltdomain)
@@ -229,6 +237,7 @@ while True:
 
     # Check if it is a valid domain
     if not is_valid_domain(QUERYDOMAIN):
+        LOGIT.info("queried destination '%s' is not a valid FQDN, returning 'BH'", QUERYDOMAIN)
         print("BH")
         continue
 
@@ -240,6 +249,11 @@ while True:
             answer = RESOLVER.query((QUERYDOMAIN + "." + udomain), 'A')
         except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
             qfailed = True
+        except dns.exception.Timeout:
+            LOGIT.warning("URIBL '%s' failed to answer query for '%s' within %s seconds, returning 'BH'",
+                          udomain, QUERYDOMAIN, RESOLVER.lifetime)
+            print("BH")
+            continue
         else:
             qfailed = False
 
