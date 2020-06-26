@@ -63,7 +63,7 @@ if os.path.isfile(CFILE):
     # Attempt to read mandatory configuration parameters and see if they contain
     # useful values, if possible to determine.
     try:
-        if config["GENERAL"]["LOGLEVEL"] not in ["DEBUG", "INFO", "WARNING", "ERROR"]:
+        if config["GENERAL"]["LOGLEVEL"].upper() not in ["DEBUG", "INFO", "WARNING", "ERROR"]:
             raise ValueError("log level configuration invalid")
 
         if config.getint("GENERAL", "RESOLVER_TIMEOUT") not in range(2, 20):
@@ -93,7 +93,7 @@ if os.path.isfile(CFILE):
     LOGIT.setLevel({"DEBUG": logging.DEBUG,
                     "INFO": logging.INFO,
                     "WARNING": logging.WARNING,
-                    "ERROR": logging.ERROR}[config["GENERAL"]["LOGLEVEL"]])
+                    "ERROR": logging.ERROR}[config["GENERAL"]["LOGLEVEL"].upper()])
 
 
 else:
