@@ -179,7 +179,6 @@ if os.path.isfile(CFILE):
                     "WARNING": logging.WARNING,
                     "ERROR": logging.ERROR}[config["GENERAL"]["LOGLEVEL"].upper()])
 
-
 else:
     LOGIT.error("Supplied configuraion file path '%s' is not a file", CFILE)
     sys.exit(127)
