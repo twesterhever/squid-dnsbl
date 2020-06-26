@@ -164,8 +164,8 @@ if os.path.isfile(CFILE):
         for scuribl in config["GENERAL"]["ACTIVE_URIBLS"].split():
             if not config[scuribl]:
                 raise ValueError("configuration section for active URIBL " + scuribl + " missing")
-            elif not config[scuribl]["FQDN"]:
-                raise ValueError("no FQDN given for active URIBL " + scuribl)
+            elif not is_valid_domain(config[scuribl]["FQDN"]):
+                raise ValueError("no valid FQDN given for active URIBL " + scuribl)
 
     except (KeyError, ValueError) as error:
         LOGIT.error("Configuration sanity tests failed: %s", error)
