@@ -261,7 +261,7 @@ while True:
 
             # Concatenate responses and log them...
             responses = ""
-            uriblmapoutput = "blacklist=\""
+            uriblmapoutput = "blacklist='"
             for rdata in answer:
                 rdata = str(rdata)
                 responses = responses + rdata + " "
@@ -279,7 +279,7 @@ while True:
 
             if config.getboolean("GENERAL", "USE_REPLYMAP"):
                 uriblmapoutput = uriblmapoutput.strip(", ")
-                uriblmapoutput += "\""
+                uriblmapoutput += "'"
                 print("OK", uriblmapoutput)
             else:
                 print("OK")
