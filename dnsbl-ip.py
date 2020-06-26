@@ -8,43 +8,25 @@ Domains are read from STDIN and checked if they are valid. If
 so, a DNS query is performed for any resolved IP address and its
 result enumerated. IP adresses are checked agains RBL directly.
 
-In case multiple RBL URIs are given as command line arguments,
-the script uses all of them. Additional blacklist information is
-passed via keywords, e.g. for using it in custom built error pages. """
+Settings are read from the configuration file path supplied as a
+command line argument. """
 
 # Import needed packages
+import configparser
 import ipaddress
 import re
 import sys
-import os.path
+import os
 import logging
 import logging.handlers
 import dns.resolver
 
-# *** Define constants and settings... ***
 
-# If desired, a mapping of DNS return values to human readable
-# strings can be specified here. This may be used for displaying
-# the blacklist source to users in order to avoid confusion.
-#
-# Please see the corresponding Squid documentation for further information:
-# http://www.squid-cache.org/Doc/config/external_acl_type/
-#
-# NOTE: This helper stops after first blacklist match. If desired,
-# consider building an aggregated RBL with distinct DNS answers
-# returned all at once.
-RBL_MAP_FILE = "/opt/squid-dnsbl/rblmap"
-RBL_MAP = {}
-
-# Should failing RFC 5782 (section 5) tests result in permanent BH
-# responses (fail close behaviour)? If set to False, an error message
-# is logged and the scripts continues to send DNS queries to the RBL.
-#
-# WARNING: You are strongly advised not to set this to False! Doing
-# so is a security risk, as an attacker or outage might render the RBL
-# FQDN permanently unusable, provoking a silent fail open behaviour.
-RETURN_BH_ON_FAILED_RFC_TEST = True
-
+try:
+    CFILE = sys.argv[1]
+except IndexError:
+    print("Usage: " + sys.argv[0] + " [path to configuration file]")
+    sys.exit(127)
 
 # Initialise logging (to "/dev/log" - or STDERR if unavailable - for level INFO by default)
 LOGIT = logging.getLogger('squid-dnsbl-helper')
@@ -61,20 +43,6 @@ else:
     HANDLER.setFormatter(FORMAT)
 
 LOGIT.addHandler(HANDLER)
-
-if os.path.isfile(RBL_MAP_FILE):
-    with open(RBL_MAP_FILE, "r") as mapfile:
-        mapcontent = mapfile.read().strip()
-
-    # JSON module is needed for loading the dictionary representation into
-    # a dictionary...
-    import json
-
-    RBL_MAP = json.loads(mapcontent)
-    LOGIT.debug("Successfully read RBL map dictionary from %s", RBL_MAP_FILE)
-
-
-RBL_DOMAIN = []
 
 
 def is_valid_domain(chkdomain: str):
@@ -196,39 +164,82 @@ def test_rbl_rfc5782(rbltdomain: str):
     return True
 
 
-# Test if DNSBL URI is a valid domain...
-try:
-    if not sys.argv[1]:
-        print("BH")
+if os.path.isfile(CFILE):
+    LOGIT.debug("Attempting to read configuration from '%s' ...", CFILE)
+
+    if os.access(CFILE, os.W_OK) or os.access(CFILE, os.X_OK):
+        LOGIT.error("Supplied configuration file '%s' is writeable or executable, aborting", CFILE)
+        print("Supplied configuration file '" + CFILE + "' is writeable or executable, aborting")
         sys.exit(127)
-except IndexError:
-    print("Usage: " + sys.argv[0] + " RBL1 RBL2 RBLn")
+
+    config = configparser.ConfigParser()
+
+    with open(CFILE, "r") as fptr:
+        config.read_file(fptr)
+
+    LOGIT.debug("Read configuration from '%s', performing sanity tests...", CFILE)
+
+    # Attempt to read mandatory configuration parameters and see if they contain
+    # useful values, if possible to determine.
+    try:
+        if config["GENERAL"]["LOGLEVEL"].upper() not in ["DEBUG", "INFO", "WARNING", "ERROR"]:
+            raise ValueError("log level configuration invalid")
+
+        if config.getint("GENERAL", "RESOLVER_TIMEOUT") not in range(2, 20):
+            raise ValueError("resolver timeout configured out of bounds")
+
+        for singleckey in ["RETURN_BH_ON_FAILED_RFC_TEST",
+                           "USE_REPLYMAP"]:
+            if config.getboolean("GENERAL", singleckey) not in [True, False]:
+                raise ValueError("[\"GENERAL\"][\"" + singleckey + "\"] configuration invalid")
+
+        if not config["GENERAL"]["ACTIVE_RBLS"]:
+            raise ValueError("no active RBL configuration sections defined")
+
+        for scrbl in config["GENERAL"]["ACTIVE_RBLS"].split():
+            if not config[scrbl]:
+                raise ValueError("configuration section for active RBL " + scrbl + " missing")
+            elif not is_valid_domain(config[scrbl]["FQDN"]):
+                raise ValueError("no valid FQDN given for active RBL " + scrbl)
+
+    except (KeyError, ValueError) as error:
+        LOGIT.error("Configuration sanity tests failed: %s", error)
+        sys.exit(127)
+
+    LOGIT.info("Configuation sanity tests passed, good, processing...")
+
+    # Apply configured logging level to avoid INFO/DEBUG clutter (thanks, cf5cec3a)...
+    LOGIT.setLevel({"DEBUG": logging.DEBUG,
+                    "INFO": logging.INFO,
+                    "WARNING": logging.WARNING,
+                    "ERROR": logging.ERROR}[config["GENERAL"]["LOGLEVEL"].upper()])
+
+else:
+    LOGIT.error("Supplied configuraion file path '%s' is not a file", CFILE)
     sys.exit(127)
 
-for tdomain in sys.argv[1:]:
-    if not is_valid_domain(tdomain):
-        print("BH")
-        sys.exit(127)
-    else:
-        RBL_DOMAIN.append(tdomain.strip(".") + ".")
+# Examine FQDNs of active RBLs...
+RBL_DOMAINS = []
+for active_rbl in config["GENERAL"]["ACTIVE_RBLS"].split():
+    RBL_DOMAINS.append((active_rbl, config[active_rbl]["FQDN"].strip(".") + "."))
 
 # Set up resolver object
 RESOLVER = dns.resolver.Resolver()
 
 # Set timeout for resolving
-RESOLVER.lifetime = 5
+RESOLVER.lifetime = config.getint("GENERAL", "RESOLVER_TIMEOUT")
 
 # Test if specified RBLs work correctly (according to RFC 5782 [section 5])...
 PASSED_RFC_TEST = True
-for trbl in RBL_DOMAIN:
-    if not test_rbl_rfc5782(trbl):
+for active_rbl in RBL_DOMAINS:
+    if not test_rbl_rfc5782(active_rbl[1]):
         # In this case, an RBL has failed the test...
-        LOGIT.warning("RFC 5782 (section 5) test for RBL '%s' failed", trbl)
+        LOGIT.warning("RFC 5782 (section 5) test for RBL '%s' failed", active_rbl[1])
         PASSED_RFC_TEST = False
 
 # Depending on the configuration at the beginning of this script, further
 # queries will or will not result in BH every time. Adjust log messages...
-if not PASSED_RFC_TEST and RETURN_BH_ON_FAILED_RFC_TEST:
+if not PASSED_RFC_TEST and config.getboolean("GENERAL", "RETURN_BH_ON_FAILED_RFC_TEST"):
     LOGIT.error("Aborting due to failed RFC 5782 (section 5) test for RBL")
 elif not PASSED_RFC_TEST:
     LOGIT.warning("There were failed RFC 5782 (section 5) RBL tests. Possible fail open provocation, resuming normal operation, you have been warned...")
@@ -250,7 +261,7 @@ while True:
         break
 
     # Immediately return BH if configuration requires to do so...
-    if RETURN_BH_ON_FAILED_RFC_TEST and not PASSED_RFC_TEST:
+    if config.getboolean("GENERAL", "RETURN_BH_ON_FAILED_RFC_TEST") and not PASSED_RFC_TEST:
         print("BH")
         continue
 
@@ -275,15 +286,15 @@ while True:
         # Query each IP address against RBL and enumerate output...
         qfailed = False
 
-        for udomain in RBL_DOMAIN:
+        for active_rbl in RBL_DOMAINS:
             for idx, qip in enumerate(IPS):
                 try:
-                    answer = RESOLVER.query((build_reverse_ip(qip) + "." + udomain), 'A')
+                    answer = RESOLVER.query((build_reverse_ip(qip) + "." + active_rbl[1]), 'A')
                 except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
                     qfailed = True
                 except dns.exception.Timeout:
                     LOGIT.warning("RBL '%s' failed to answer query for '%s' within %s seconds, returning 'BH'",
-                                  udomain, build_reverse_ip(qip), RESOLVER.lifetime)
+                                  active_rbl[1], build_reverse_ip(qip), RESOLVER.lifetime)
                     print("BH")
                     break
                 else:
@@ -298,16 +309,16 @@ while True:
 
                         # If a RBL map file is present, the corresponding key to each DNS reply
                         # for this RBL is enumerated and passed to Squid via additional keywords...
-                        if RBL_MAP:
+                        if config.getboolean("GENERAL", "USE_REPLYMAP"):
                             try:
-                                rblmapoutput += RBL_MAP[udomain.strip(".")][rdata] + ", "
+                                rblmapoutput += config[active_rbl[0]][rdata] + ", "
                             except KeyError:
                                 pass
 
                     LOGIT.warning("RBL hit on '%s.%s' with response '%s' (queried destination: '%s')",
-                                  build_reverse_ip(qip), udomain, responses.strip(), QSTRING)
+                                  build_reverse_ip(qip), active_rbl[1], responses.strip(), QSTRING)
 
-                    if RBL_MAP:
+                    if config.getboolean("GENERAL", "USE_REPLYMAP"):
                         rblmapoutput = rblmapoutput.strip(", ")
                         rblmapoutput += "\""
                         print("OK", rblmapoutput)
