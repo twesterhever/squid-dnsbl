@@ -72,7 +72,7 @@ if os.path.isfile(CFILE):
         for singleckey in ["RETURN_BH_ON_FAILED_RFC_TEST",
                            "USE_REPLYMAP"]:
             if config["GENERAL"][singleckey].lower() not in ["yes", "no"]:
-                raise ValueError("[\"GENERAL\"][\""+ singleckey + "\"] configuration invalid")
+                raise ValueError("[\"GENERAL\"][\"" + singleckey + "\"] configuration invalid")
 
         if not config["GENERAL"]["ACTIVE_URIBLS"]:
             raise ValueError("no active URIBL configuration sections defined")
@@ -183,6 +183,7 @@ def test_rbl_rfc5782(uribltdomain: str):
 
     LOGIT.info("URIBL '%s' seems to be operational and compliant to RFC 5782 (section 5) - good", uribltdomain)
     return True
+
 
 # Examine FQDNs of active URIBLs...
 URIBL_DOMAIN = []
