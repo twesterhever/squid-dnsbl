@@ -71,7 +71,7 @@ if os.path.isfile(CFILE):
 
         for singleckey in ["RETURN_BH_ON_FAILED_RFC_TEST",
                            "USE_REPLYMAP"]:
-            if config["GENERAL"][singleckey].lower() not in ["yes", "no"]:
+            if config.getboolean("GENERAL", singleckey) not in [True, False]:
                 raise ValueError("[\"GENERAL\"][\"" + singleckey + "\"] configuration invalid")
 
         if not config["GENERAL"]["ACTIVE_URIBLS"]:
@@ -206,7 +206,7 @@ for turibl in URIBL_DOMAIN:
 
 # Depending on the configuration at the beginning of this script, further
 # queries will or will not result in BH every time. Adjust log messages...
-if not PASSED_RFC_TEST and config["GENERAL"]["RETURN_BH_ON_FAILED_RFC_TEST"].lower() == "yes":
+if not PASSED_RFC_TEST and config.getboolean("GENERAL", "RETURN_BH_ON_FAILED_RFC_TEST"):
     LOGIT.error("Aborting due to failed RFC 5782 (section 5) test for URIBL")
 elif not PASSED_RFC_TEST:
     LOGIT.warning("There were failed RFC 5782 (section 5) URIBL tests. Possible fail open provocation, resuming normal operation, you have been warned...")
@@ -228,7 +228,7 @@ while True:
         break
 
     # Immediately return BH if configuration requires to do so...
-    if config["GENERAL"]["RETURN_BH_ON_FAILED_RFC_TEST"].lower() == "yes" and not PASSED_RFC_TEST:
+    if config.getboolean("GENERAL", "RETURN_BH_ON_FAILED_RFC_TEST") and not PASSED_RFC_TEST:
         print("BH")
         continue
 
@@ -270,7 +270,7 @@ while True:
 
                 # If a URIBL map file is present, the corresponding key to each DNS reply
                 # for this URIBL is enumerated and passed to Squid via additional keywords...
-                if config["GENERAL"]["USE_REPLYMAP"].lower() == "yes":
+                if config.getboolean("GENERAL", "USE_REPLYMAP"):
                     try:
                         uriblmapoutput += config["lunf"][udomain.strip(".")][rdata] + ", "
                     except KeyError:
@@ -279,7 +279,7 @@ while True:
                 LOGIT.warning("URIBL hit on '%s.%s' with response '%s'",
                               QUERYDOMAIN, udomain, responses.strip())
 
-            if config["GENERAL"]["USE_REPLYMAP"].lower() == "yes":
+            if config.getboolean("GENERAL", "USE_REPLYMAP"):
                 uriblmapoutput = uriblmapoutput.strip(", ")
                 uriblmapoutput += "\""
                 print("OK", uriblmapoutput)
