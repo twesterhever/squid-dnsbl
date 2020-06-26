@@ -66,7 +66,7 @@ if os.path.isfile(CFILE):
         if config["GENERAL"]["LOGLEVEL"] not in ["DEBUG", "INFO", "WARNING", "ERROR"]:
             raise ValueError("log level configuration invalid")
 
-        if int(config["GENERAL"]["RESOLVER_TIMEOUT"]) not in range(1, 20):
+        if int(config["GENERAL"]["RESOLVER_TIMEOUT"]) not in range(2, 20):
             raise ValueError("resolver timeout configured out of bounds")
 
         for singleckey in ["RETURN_BH_ON_FAILED_RFC_TEST",
