@@ -272,7 +272,8 @@ while True:
                     try:
                         uriblmapoutput += config[active_uribl[0]][rdata] + ", "
                     except KeyError:
-                        pass
+                        LOGIT.info("replymap is active, but configuration file does not contain data for %s (%s)",
+                                   active_uribl[0], rdata)
 
                 LOGIT.warning("URIBL hit on '%s.%s' with response '%s'",
                               QUERYDOMAIN, active_uribl[1], responses.strip())
