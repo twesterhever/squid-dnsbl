@@ -184,9 +184,9 @@ else:
     sys.exit(127)
 
 # Examine FQDNs of active URIBLs...
-URIBL_DOMAIN = []
+URIBL_DOMAINS = []
 for active_uribl in config["GENERAL"]["ACTIVE_URIBLS"].split():
-    URIBL_DOMAIN.append(config[active_uribl]["FQDN"].strip(".") + ".")
+    URIBL_DOMAINS.append((active_uribl, config[active_uribl]["FQDN"].strip(".") + "."))
 
 # Set up resolver object
 RESOLVER = dns.resolver.Resolver()
@@ -196,10 +196,10 @@ RESOLVER.lifetime = config.getint("GENERAL", "RESOLVER_TIMEOUT")
 
 # Test if specified URIBLs work correctly (according to RFC 5782 [section 5])...
 PASSED_RFC_TEST = True
-for turibl in URIBL_DOMAIN:
-    if not test_rbl_rfc5782(turibl):
+for active_uribl in URIBL_DOMAINS:
+    if not test_rbl_rfc5782(active_uribl[1]):
         # in this case, an URIBL has failed the test...
-        LOGIT.warning("RFC 5782 (section 5) test for URIBL '%s' failed", turibl)
+        LOGIT.warning("RFC 5782 (section 5) test for URIBL '%s' failed", active_uribl[1])
         PASSED_RFC_TEST = False
 
 # Depending on the configuration at the beginning of this script, further
@@ -246,14 +246,14 @@ while True:
     # Test if an A record can be found for this domain
     # some exceptions in case of invalid domains (label too long, or empty)
     # are also handled here
-    for udomain in URIBL_DOMAIN:
+    for active_uribl in URIBL_DOMAINS:
         try:
-            answer = RESOLVER.query((QUERYDOMAIN + "." + udomain), 'A')
+            answer = RESOLVER.query((QUERYDOMAIN + "." + active_uribl[1]), 'A')
         except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
             qfailed = True
         except dns.exception.Timeout:
             LOGIT.warning("URIBL '%s' failed to answer query for '%s' within %s seconds, returning 'BH'",
-                          udomain, QUERYDOMAIN, RESOLVER.lifetime)
+                          active_uribl[1], QUERYDOMAIN, RESOLVER.lifetime)
             print("BH")
             break
         else:
@@ -270,12 +270,12 @@ while True:
                 # for this URIBL is enumerated and passed to Squid via additional keywords...
                 if config.getboolean("GENERAL", "USE_REPLYMAP"):
                     try:
-                        uriblmapoutput += config["lunf"][udomain.strip(".")][rdata] + ", "
+                        uriblmapoutput += config[active_uribl[0]][rdata] + ", "
                     except KeyError:
                         pass
 
                 LOGIT.warning("URIBL hit on '%s.%s' with response '%s'",
-                              QUERYDOMAIN, udomain, responses.strip())
+                              QUERYDOMAIN, active_uribl[1], responses.strip())
 
             if config.getboolean("GENERAL", "USE_REPLYMAP"):
                 uriblmapoutput = uriblmapoutput.strip(", ")
