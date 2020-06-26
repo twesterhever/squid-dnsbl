@@ -66,7 +66,7 @@ if os.path.isfile(CFILE):
         if config["GENERAL"]["LOGLEVEL"] not in ["DEBUG", "INFO", "WARNING", "ERROR"]:
             raise ValueError("log level configuration invalid")
 
-        if int(config["GENERAL"]["RESOLVER_TIMEOUT"]) not in range(2, 20):
+        if config.getint("GENERAL", "RESOLVER_TIMEOUT") not in range(2, 20):
             raise ValueError("resolver timeout configured out of bounds")
 
         for singleckey in ["RETURN_BH_ON_FAILED_RFC_TEST",
@@ -194,7 +194,7 @@ for active_uribl in config["GENERAL"]["ACTIVE_URIBLS"].split():
 RESOLVER = dns.resolver.Resolver()
 
 # Set timeout for resolving
-RESOLVER.lifetime = int(config["GENERAL"]["RESOLVER_TIMEOUT"])
+RESOLVER.lifetime = config.getint("GENERAL", "RESOLVER_TIMEOUT")
 
 # Test if specified URIBLs work correctly (according to RFC 5782 [section 5])...
 PASSED_RFC_TEST = True
