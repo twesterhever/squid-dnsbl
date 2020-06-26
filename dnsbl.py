@@ -45,62 +45,6 @@ else:
 LOGIT.addHandler(HANDLER)
 
 
-if os.path.isfile(CFILE):
-    LOGIT.debug("Attempting to read configuration from '%s' ...", CFILE)
-
-    if os.access(CFILE, os.W_OK) or os.access(CFILE, os.X_OK):
-        LOGIT.error("Supplied configuration file '%s' is writeable or executable, aborting", CFILE)
-        print("Supplied configuration file '" + CFILE + "' is writeable or executable, aborting")
-        sys.exit(127)
-
-    config = configparser.ConfigParser()
-
-    with open(CFILE, "r") as fptr:
-        config.read_file(fptr)
-
-    LOGIT.debug("Read configuration from '%s', performing sanity tests...", CFILE)
-
-    # Attempt to read mandatory configuration parameters and see if they contain
-    # useful values, if possible to determine.
-    try:
-        if config["GENERAL"]["LOGLEVEL"].upper() not in ["DEBUG", "INFO", "WARNING", "ERROR"]:
-            raise ValueError("log level configuration invalid")
-
-        if config.getint("GENERAL", "RESOLVER_TIMEOUT") not in range(2, 20):
-            raise ValueError("resolver timeout configured out of bounds")
-
-        for singleckey in ["RETURN_BH_ON_FAILED_RFC_TEST",
-                           "USE_REPLYMAP"]:
-            if config.getboolean("GENERAL", singleckey) not in [True, False]:
-                raise ValueError("[\"GENERAL\"][\"" + singleckey + "\"] configuration invalid")
-
-        if not config["GENERAL"]["ACTIVE_URIBLS"]:
-            raise ValueError("no active URIBL configuration sections defined")
-
-        for scuribl in config["GENERAL"]["ACTIVE_URIBLS"].split():
-            if not config[scuribl]:
-                raise ValueError("configuration section for active URIBL " + scuribl + " missing")
-            elif not config[scuribl]["FQDN"]:
-                raise ValueError("no FQDN given for active URIBL " + scuribl)
-
-    except (KeyError, ValueError) as error:
-        LOGIT.error("Configuration sanity tests failed: %s", error)
-        sys.exit(127)
-
-    LOGIT.info("Configuation sanity tests passed, good, processing...")
-
-    # Apply configured logging level to avoid INFO/DEBUG clutter (thanks, cf5cec3a)...
-    LOGIT.setLevel({"DEBUG": logging.DEBUG,
-                    "INFO": logging.INFO,
-                    "WARNING": logging.WARNING,
-                    "ERROR": logging.ERROR}[config["GENERAL"]["LOGLEVEL"].upper()])
-
-
-else:
-    LOGIT.error("Supplied configuraion file path '%s' is not a file", CFILE)
-    sys.exit(127)
-
-
 def is_ipaddress(chkinput: str):
     """ Function call: is_ipaddress(input)
 
@@ -184,6 +128,61 @@ def test_rbl_rfc5782(uribltdomain: str):
     LOGIT.info("URIBL '%s' seems to be operational and compliant to RFC 5782 (section 5) - good", uribltdomain)
     return True
 
+
+if os.path.isfile(CFILE):
+    LOGIT.debug("Attempting to read configuration from '%s' ...", CFILE)
+
+    if os.access(CFILE, os.W_OK) or os.access(CFILE, os.X_OK):
+        LOGIT.error("Supplied configuration file '%s' is writeable or executable, aborting", CFILE)
+        print("Supplied configuration file '" + CFILE + "' is writeable or executable, aborting")
+        sys.exit(127)
+
+    config = configparser.ConfigParser()
+
+    with open(CFILE, "r") as fptr:
+        config.read_file(fptr)
+
+    LOGIT.debug("Read configuration from '%s', performing sanity tests...", CFILE)
+
+    # Attempt to read mandatory configuration parameters and see if they contain
+    # useful values, if possible to determine.
+    try:
+        if config["GENERAL"]["LOGLEVEL"].upper() not in ["DEBUG", "INFO", "WARNING", "ERROR"]:
+            raise ValueError("log level configuration invalid")
+
+        if config.getint("GENERAL", "RESOLVER_TIMEOUT") not in range(2, 20):
+            raise ValueError("resolver timeout configured out of bounds")
+
+        for singleckey in ["RETURN_BH_ON_FAILED_RFC_TEST",
+                           "USE_REPLYMAP"]:
+            if config.getboolean("GENERAL", singleckey) not in [True, False]:
+                raise ValueError("[\"GENERAL\"][\"" + singleckey + "\"] configuration invalid")
+
+        if not config["GENERAL"]["ACTIVE_URIBLS"]:
+            raise ValueError("no active URIBL configuration sections defined")
+
+        for scuribl in config["GENERAL"]["ACTIVE_URIBLS"].split():
+            if not config[scuribl]:
+                raise ValueError("configuration section for active URIBL " + scuribl + " missing")
+            elif not config[scuribl]["FQDN"]:
+                raise ValueError("no FQDN given for active URIBL " + scuribl)
+
+    except (KeyError, ValueError) as error:
+        LOGIT.error("Configuration sanity tests failed: %s", error)
+        sys.exit(127)
+
+    LOGIT.info("Configuation sanity tests passed, good, processing...")
+
+    # Apply configured logging level to avoid INFO/DEBUG clutter (thanks, cf5cec3a)...
+    LOGIT.setLevel({"DEBUG": logging.DEBUG,
+                    "INFO": logging.INFO,
+                    "WARNING": logging.WARNING,
+                    "ERROR": logging.ERROR}[config["GENERAL"]["LOGLEVEL"].upper()])
+
+
+else:
+    LOGIT.error("Supplied configuraion file path '%s' is not a file", CFILE)
+    sys.exit(127)
 
 # Examine FQDNs of active URIBLs...
 URIBL_DOMAIN = []
