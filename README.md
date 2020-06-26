@@ -7,7 +7,7 @@ by only allowing traffic to well-known ports.
 While Squid is able to handle file based blocklists by taking
 advantage of [SquidGuard](http://squidguard.org/), the usage
 of DNSBLs has never been that easy. There is
-[some patch available](http://squidguard.org/Downloads/Contrib/squidGuard-1.4-dnsbl.patch)
+[a patch available](http://squidguard.org/Downloads/Contrib/squidGuard-1.4-dnsbl.patch)
 which adds this feature, but it did not seem to made it into
 many distribution packages.
 
@@ -87,7 +87,7 @@ Expected JSON map syntax is as follows:
 
 Please note: The helpers stops after first blacklist match. If desired,
 consider building an aggregated RBL with distinct DNS answers returned
-all at once (e.g. by running a custom [`rbldnsd`](https://www.corpit.ru/mjt/rbldnsd.html)
+all at once (e.g. by running a custom [`rbldnsd`](https://rbldnsd.io/)
 instance).
 
 ### Handling of failed RFC 5782 (section 5) tests
