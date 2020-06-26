@@ -4,56 +4,29 @@
 """ dnsbl [.py]
 
 Squid helper script for querying domains against a given DNSBL
-such as Spamhaus DBL. IP addresses are handled, but will most
-likely not result in any useful query (see dnsbl-ip.py for
+such as Spamhaus DBL. IP addresses are handled as well, but will
+most likely not result in any useful queries (see dnsbl-ip.py for
 further details on this).
 
-In case multiple DNSBL URIs are given as command line arguments,
-the script uses all of them. Additional blacklist information is
-passed via keywords, e.g. for using it in custom built error pages. """
+Settings are read from the configuration file path supplied as a
+command line argument. """
 
 # Import needed packages
+import configparser
 import ipaddress
 import re
 import sys
-import os.path
+import os
 import logging
 import logging.handlers
 import dns.resolver
 
-# *** Define constants and settings... ***
 
-# If desired, a mapping of DNS return values to human readable
-# strings can be specified here. This may be used for displaying
-# the blacklist source to users in order to avoid confusion.
-#
-# Please see the corresponding Squid documentation for further information:
-# http://www.squid-cache.org/Doc/config/external_acl_type/
-#
-# NOTE: This helper stops after first blacklist match. If desired,
-# consider building an aggregated RBL with distinct DNS answers
-# returned all at once.
-URIBL_MAP_FILE = "/opt/squid-dnsbl/uriblmap"
-URIBL_MAP = {}
-
-# Should failing RFC 5782 (section 5) tests result in permanent BH
-# responses (fail close behaviour)? If set to False, an error message
-# is logged and the scripts continues to send DNS queries to the RBL.
-#
-# WARNING: You are strongly advised not to set this to False! Doing
-# so is a security risk, as an attacker or outage might render the RBL
-# FQDN permanently unusable, provoking a silent fail open behaviour.
-RETURN_BH_ON_FAILED_RFC_TEST = True
-
-# NOTE: While RBLs passing RFC 5782 (section 5) test can be considered operational,
-# at least on a very basic level, this is not sufficient for URIBLs as it does
-# not detect strict QNAME minimization being in use on the DNS resolver configured.
-#
-# Strict QNAME minimization, particular in combination with stub-zones, effectively
-# renders DNSBLs unusable and cannot be reliably detected by RFC 5782 (section 5)
-# tests against URIBLs. You are therefore _strongly_ encouraged not to enable
-# strict QNAME minimization.
-
+try:
+    CFILE = sys.argv[1]
+except IndexError:
+    print("Usage: " + sys.argv[0] + " [path to configuration file]")
+    sys.exit(127)
 
 # Initialise logging (to "/dev/log" - or STDERR if unavailable - for level INFO by default)
 LOGIT = logging.getLogger('squid-dnsbl-helper')
@@ -71,19 +44,61 @@ else:
 
 LOGIT.addHandler(HANDLER)
 
-if os.path.isfile(URIBL_MAP_FILE):
-    with open(URIBL_MAP_FILE, "r") as mapfile:
-        mapcontent = mapfile.read().strip()
 
-    # JSON module is needed for loading the dictionary representation into
-    # a dictionary...
-    import json
+if os.path.isfile(CFILE):
+    LOGIT.debug("Attempting to read configuration from '%s' ...", CFILE)
 
-    URIBL_MAP = json.loads(mapcontent)
-    LOGIT.debug("Successfully read URIBL map dictionary from %s", URIBL_MAP_FILE)
+    if os.access(CFILE, os.W_OK) or os.access(CFILE, os.X_OK):
+        LOGIT.error("Supplied configuration file '%s' is writeable or executable, aborting", CFILE)
+        print("Supplied configuration file '" + CFILE + "' is writeable or executable, aborting")
+        sys.exit(127)
+
+    config = configparser.ConfigParser()
+
+    with open(CFILE, "r") as fptr:
+        config.read_file(fptr)
+
+    LOGIT.debug("Read configuration from '%s', performing sanity tests...", CFILE)
+
+    # Attempt to read mandatory configuration parameters and see if they contain
+    # useful values, if possible to determine.
+    try:
+        if config["GENERAL"]["LOGLEVEL"] not in ["DEBUG", "INFO", "WARNING", "ERROR"]:
+            raise ValueError("log level configuration invalid")
+
+        if int(config["GENERAL"]["RESOLVER_TIMEOUT"]) not in range(1, 20):
+            raise ValueError("resolver timeout configured out of bounds")
+
+        for singleckey in ["RETURN_BH_ON_FAILED_RFC_TEST",
+                           "USE_REPLYMAP"]:
+            if config["GENERAL"][singleckey].lower() not in ["yes", "no"]:
+                raise ValueError("[\"GENERAL\"][\""+ singleckey + "\"] configuration invalid")
+
+        if not config["GENERAL"]["ACTIVE_URIBLS"]:
+            raise ValueError("no active URIBL configuration sections defined")
+
+        for scuribl in config["GENERAL"]["ACTIVE_URIBLS"].split():
+            if not config[scuribl]:
+                raise ValueError("configuration section for active URIBL " + scuribl + " missing")
+            elif not config[scuribl]["FQDN"]:
+                raise ValueError("no FQDN given for active URIBL " + scuribl)
+
+    except (KeyError, ValueError) as error:
+        LOGIT.error("Configuration sanity tests failed: %s", error)
+        sys.exit(127)
+
+    LOGIT.info("Configuation sanity tests passed, good, processing...")
+
+    # Apply configured logging level to avoid INFO/DEBUG clutter (thanks, cf5cec3a)...
+    LOGIT.setLevel({"DEBUG": logging.DEBUG,
+                    "INFO": logging.INFO,
+                    "WARNING": logging.WARNING,
+                    "ERROR": logging.ERROR}[config["GENERAL"]["LOGLEVEL"]])
 
 
-URIBL_DOMAIN = []
+else:
+    LOGIT.error("Supplied configuraion file path '%s' is not a file", CFILE)
+    sys.exit(127)
 
 
 def is_ipaddress(chkinput: str):
@@ -169,28 +184,16 @@ def test_rbl_rfc5782(uribltdomain: str):
     LOGIT.info("URIBL '%s' seems to be operational and compliant to RFC 5782 (section 5) - good", uribltdomain)
     return True
 
-
-# Test if DNSBL URI is a valid domain...
-try:
-    if not sys.argv[1]:
-        print("BH")
-        sys.exit(127)
-except IndexError:
-    print("Usage: " + sys.argv[0] + " URIBL1 URIBL2 URIBLn")
-    sys.exit(127)
-
-for tdomain in sys.argv[1:]:
-    if not is_valid_domain(tdomain):
-        print("BH")
-        sys.exit(127)
-    else:
-        URIBL_DOMAIN.append(tdomain.strip(".") + ".")
+# Examine FQDNs of active URIBLs...
+URIBL_DOMAIN = []
+for active_uribl in config["GENERAL"]["ACTIVE_URIBLS"].split():
+    URIBL_DOMAIN.append(config[active_uribl]["FQDN"].strip(".") + ".")
 
 # Set up resolver object
 RESOLVER = dns.resolver.Resolver()
 
 # Set timeout for resolving
-RESOLVER.lifetime = 5
+RESOLVER.lifetime = int(config["GENERAL"]["RESOLVER_TIMEOUT"])
 
 # Test if specified URIBLs work correctly (according to RFC 5782 [section 5])...
 PASSED_RFC_TEST = True
@@ -202,7 +205,7 @@ for turibl in URIBL_DOMAIN:
 
 # Depending on the configuration at the beginning of this script, further
 # queries will or will not result in BH every time. Adjust log messages...
-if not PASSED_RFC_TEST and RETURN_BH_ON_FAILED_RFC_TEST:
+if not PASSED_RFC_TEST and config["GENERAL"]["RETURN_BH_ON_FAILED_RFC_TEST"].lower() == "yes":
     LOGIT.error("Aborting due to failed RFC 5782 (section 5) test for URIBL")
 elif not PASSED_RFC_TEST:
     LOGIT.warning("There were failed RFC 5782 (section 5) URIBL tests. Possible fail open provocation, resuming normal operation, you have been warned...")
@@ -224,7 +227,7 @@ while True:
         break
 
     # Immediately return BH if configuration requires to do so...
-    if RETURN_BH_ON_FAILED_RFC_TEST and not PASSED_RFC_TEST:
+    if config["GENERAL"]["RETURN_BH_ON_FAILED_RFC_TEST"].lower() == "yes" and not PASSED_RFC_TEST:
         print("BH")
         continue
 
@@ -266,16 +269,16 @@ while True:
 
                 # If a URIBL map file is present, the corresponding key to each DNS reply
                 # for this URIBL is enumerated and passed to Squid via additional keywords...
-                if URIBL_MAP:
+                if config["GENERAL"]["USE_REPLYMAP"].lower() == "yes":
                     try:
-                        uriblmapoutput += URIBL_MAP[udomain.strip(".")][rdata] + ", "
+                        uriblmapoutput += config["lunf"][udomain.strip(".")][rdata] + ", "
                     except KeyError:
                         pass
 
                 LOGIT.warning("URIBL hit on '%s.%s' with response '%s'",
                               QUERYDOMAIN, udomain, responses.strip())
 
-            if URIBL_MAP:
+            if config["GENERAL"]["USE_REPLYMAP"].lower() == "yes":
                 uriblmapoutput = uriblmapoutput.strip(", ")
                 uriblmapoutput += "\""
                 print("OK", uriblmapoutput)
