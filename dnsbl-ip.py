@@ -302,7 +302,7 @@ while True:
 
                     # Concatenate responses and log them...
                     responses = ""
-                    rblmapoutput = "blacklist=\""
+                    rblmapoutput = "blacklist='"
                     for rdata in answer:
                         rdata = str(rdata)
                         responses = responses + rdata + " "
@@ -320,7 +320,7 @@ while True:
 
                     if config.getboolean("GENERAL", "USE_REPLYMAP"):
                         rblmapoutput = rblmapoutput.strip(", ")
-                        rblmapoutput += "\""
+                        rblmapoutput += "'"
                         print("OK", rblmapoutput)
                     else:
                         print("OK")
