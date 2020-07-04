@@ -104,7 +104,7 @@ def test_rbl_rfc5782(uribltdomain: str):
         RESOLVER.query("invalid." + uribltdomain, 'A')
     except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
         LOGIT.debug("URIBL '%s' is not listing testpoint address 'invalid' - good", uribltdomain)
-    except dns.exception.Timeout:
+    except (dns.exception.Timeout, dns.resolver.NoNameservers):
         LOGIT.warning("URIBL '%s' failed to answer RFC 5782 (section 5) test query for 'invalid' within %s seconds",
                       uribltdomain, RESOLVER.lifetime)
         return False
@@ -118,7 +118,7 @@ def test_rbl_rfc5782(uribltdomain: str):
     except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
         LOGIT.error("URIBL '%s' is violating RFC 5782 (section 5) as it does not list 'test'", uribltdomain)
         return False
-    except dns.exception.Timeout:
+    except (dns.exception.Timeout, dns.resolver.NoNameservers):
         LOGIT.warning("URIBL '%s' failed to answer RFC 5782 (section 5) test query for 'test' within %s seconds",
                       uribltdomain, RESOLVER.lifetime)
         return False
@@ -251,7 +251,7 @@ while True:
             answer = RESOLVER.query((QUERYDOMAIN + "." + active_uribl[1]), 'A')
         except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
             qfailed = True
-        except dns.exception.Timeout:
+        except (dns.exception.Timeout, dns.resolver.NoNameservers):
             LOGIT.warning("URIBL '%s' failed to answer query for '%s' within %s seconds, returning 'BH'",
                           active_uribl[1], QUERYDOMAIN, RESOLVER.lifetime)
             print("BH")
