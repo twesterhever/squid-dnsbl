@@ -129,7 +129,7 @@ def test_rbl_rfc5782(uribltdomain: str):
     return True
 
 
-if os.path.isfile(CFILE):
+if os.path.isfile(CFILE) and not os.path.islink(CFILE):
     LOGIT.debug("Attempting to read configuration from '%s' ...", CFILE)
 
     if os.access(CFILE, os.W_OK) or os.access(CFILE, os.X_OK):
