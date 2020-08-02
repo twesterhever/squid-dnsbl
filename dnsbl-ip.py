@@ -169,7 +169,7 @@ if os.path.isfile(CFILE) and not os.path.islink(CFILE):
 
     if os.access(CFILE, os.W_OK) or os.access(CFILE, os.X_OK):
         LOGIT.error("Supplied configuration file '%s' is writeable or executable, aborting", CFILE)
-        print("Supplied configuration file '" + CFILE + "' is writeable or executable, aborting")
+        print("BH")
         sys.exit(127)
 
     config = configparser.ConfigParser()
@@ -204,6 +204,7 @@ if os.path.isfile(CFILE) and not os.path.islink(CFILE):
 
     except (KeyError, ValueError) as error:
         LOGIT.error("Configuration sanity tests failed: %s", error)
+        print("BH")
         sys.exit(127)
 
     LOGIT.info("Configuation sanity tests passed, good, processing...")
@@ -216,6 +217,7 @@ if os.path.isfile(CFILE) and not os.path.islink(CFILE):
 
 else:
     LOGIT.error("Supplied configuraion file path '%s' is not a file", CFILE)
+    print("BH")
     sys.exit(127)
 
 # Examine FQDNs of active RBLs...
