@@ -14,13 +14,18 @@ command line argument. """
 # Import needed packages
 import configparser
 import ipaddress
-import re
-import sys
-import os
 import logging
 import logging.handlers
+import os
+import re
+import sys
+from getpass import getuser
 import dns.resolver
 
+
+if getuser() == "root" or os.getuid() == 0:
+    print("For security purposes, this script must not be executed as root!")
+    sys.exit(127)
 
 try:
     CFILE = sys.argv[1]
