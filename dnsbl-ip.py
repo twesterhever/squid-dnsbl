@@ -373,8 +373,8 @@ while True:
                             except KeyError:
                                 pass
 
-                    LOGIT.warning("RBL hit on '%s.%s' with response '%s' (queried destination: '%s')",
-                                  build_reverse_ip(qip), active_rbl[1], responses.strip(), QSTRING)
+                    LOGIT.warning("RBL hit on %s ('%s.%s') with response '%s' (queried destination: '%s')",
+                                  qip, build_reverse_ip(qip), active_rbl[1], responses.strip(), QSTRING)
 
                     if config.getboolean("GENERAL", "USE_REPLYMAP"):
                         rblmapoutput = rblmapoutput.strip(", ")
