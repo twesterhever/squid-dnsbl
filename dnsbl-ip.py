@@ -127,6 +127,51 @@ def resolve_addresses(domain: str):
     return ips
 
 
+def resolve_nameserver_address(domain: str):
+    """ Function call: resolve_nameserver_address(domain)
+
+    This function takes a domain and enumerates all IPv4 and IPv6
+    addresses of nameserver (NS) records for it. They are returned as
+    an array. """
+
+    # Check if this is a valid domain...
+    if not is_valid_domain(domain):
+        return None
+
+    # Enumerate nameservers...
+    ns = []
+    try:
+        for resolvedns in RESOLVER.query(domain, 'NS'):
+            ns.append(str(resolvedns))
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers, dns.exception.Timeout, ValueError):
+        pass
+
+    if not ns:
+        return None
+
+    ip6a = []
+    ip4a = []
+
+    for singlens in ns:
+        # Enumerate IPv6 addresses...
+        try:
+            for resolvedip in RESOLVER.query(singlens, 'AAAA'):
+                ip6a.append(str(resolvedip))
+        except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers, dns.exception.Timeout, ValueError):
+            pass
+
+        # Enumerate IPv4 addresses...
+        try:
+            for resolvedip in RESOLVER.query(singlens, 'A'):
+                ip4a.append(str(resolvedip))
+        except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers, dns.exception.Timeout, ValueError):
+            pass
+
+    # Assemble all IP addresses and return them back
+    ips = ip6a + ip4a
+    return ips
+
+
 def test_rbl_rfc5782(rbltdomain: str):
     """ Function call: test_rbl_rfc5782(RBL address)
 
@@ -194,6 +239,7 @@ if os.path.isfile(CFILE) and not os.path.islink(CFILE):
             raise ValueError("resolver timeout configured out of bounds")
 
         for singleckey in ["RETURN_BH_ON_FAILED_RFC_TEST",
+                           "QUERY_NAMESERVER_IPS",
                            "USE_REPLYMAP"]:
             if config.getboolean("GENERAL", singleckey) not in [True, False]:
                 raise ValueError("[\"GENERAL\"][\"" + singleckey + "\"] configuration invalid")
@@ -279,6 +325,11 @@ while True:
         # In this case, we are probably dealing with a domain
         IPS = resolve_addresses(QSTRING.strip(".") + ".")
 
+        # In case nameserver checks are enabled and we are dealing with a domain, resolve their
+        # nameserver IP addresses as well...
+        if config.getboolean("GENERAL", "QUERY_NAMESERVER_IPS"):
+            NSIPS = resolve_nameserver_address(QSTRING.strip(".") + ".")
+
     # Check if we have some IP addresses to lookup for...
     if not IPS:
         # ... if not, we'll return ERR instead of BH, since the latter one causes Squid
@@ -335,6 +386,50 @@ while True:
             else:
                 continue
             break
+
+        if qfailed and config.getboolean("GENERAL", "QUERY_NAMESERVER_IPS"):
+            for active_rbl in RBL_DOMAINS:
+                for idx, qip in enumerate(NSIPS):
+                    try:
+                        answer = RESOLVER.query((build_reverse_ip(qip) + "." + active_rbl[1]), 'A')
+                    except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
+                        qfailed = True
+                    except (dns.exception.Timeout, dns.resolver.NoNameservers):
+                        LOGIT.warning("RBL '%s' failed to answer query for nameserver IP '%s' (queried destination: '%s') within %s seconds, returning 'BH'",
+                                      active_rbl[1], build_reverse_ip(qip), QSTRING, RESOLVER.lifetime)
+                        print("BH")
+                        break
+                    else:
+                        qfailed = False
+
+                        # Concatenate responses and log them...
+                        responses = ""
+                        rblmapoutput = "blacklist='"
+                        for rdata in answer:
+                            rdata = str(rdata)
+                            responses = responses + rdata + " "
+
+                            # If a RBL map file is present, the corresponding key to each DNS reply
+                            # for this RBL is enumerated and passed to Squid via additional keywords...
+                            if config.getboolean("GENERAL", "USE_REPLYMAP"):
+                                try:
+                                    rblmapoutput += config[active_rbl[0]][rdata] + ", "
+                                except KeyError:
+                                    pass
+
+                        LOGIT.warning("RBL hit on nameserver IP %s ('%s.%s') with response '%s' (queried destination: '%s')",
+                                      qip, build_reverse_ip(qip), active_rbl[1], responses.strip(), QSTRING)
+
+                        if config.getboolean("GENERAL", "USE_REPLYMAP"):
+                            rblmapoutput = rblmapoutput.strip(", ")
+                            rblmapoutput += "'"
+                            print("OK", rblmapoutput)
+                        else:
+                            print("OK")
+                        break
+                else:
+                    continue
+                break
 
         if qfailed:
             print("ERR")
