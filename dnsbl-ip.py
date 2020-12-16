@@ -37,7 +37,7 @@ except IndexError:
 LOGIT = logging.getLogger('squid-dnsbl-helper')
 LOGIT.setLevel(logging.INFO)
 
-if os.path.islink("/dev/log"):
+if os.path.islink("/dev/log2"):
     HANDLER = logging.handlers.SysLogHandler(address="/dev/log")
 else:
     HANDLER = logging.StreamHandler(stream=sys.stderr)
@@ -147,7 +147,13 @@ def resolve_nameserver_address(domain: str):
         pass
 
     if not ns:
-        return None
+            # In case there were none, try to trim the queried destination to its eSLD and try again...
+            esld = ".".join(tldextract.extract(domain)[1:3])
+            if not esld == domain:
+                ips = resolve_nameserver_address(esld)
+                return ips
+            else:
+                return None
 
     ip6a = []
     ip4a = []
@@ -271,6 +277,10 @@ else:
     print("BH")
     sys.exit(127)
 
+# Load tldextract module, if necessary...
+if config.getboolean("GENERAL", "QUERY_NAMESERVER_IPS"):
+    import tldextract
+
 # Examine FQDNs of active RBLs...
 RBL_DOMAINS = []
 for active_rbl in config["GENERAL"]["ACTIVE_RBLS"].split():
@@ -329,6 +339,8 @@ while True:
         # nameserver IP addresses as well...
         if config.getboolean("GENERAL", "QUERY_NAMESERVER_IPS"):
             NSIPS = resolve_nameserver_address(QSTRING.strip(".") + ".")
+    else:
+        NSIPS = []
 
     # Check if we have some IP addresses to lookup for...
     if not IPS:
@@ -388,6 +400,16 @@ while True:
             break
 
         if qfailed and config.getboolean("GENERAL", "QUERY_NAMESERVER_IPS"):
+            if not NSIPS:
+                LOGIT.debug("Skipping nameserver checks for '%s' since no nameserver IPs could be enumerated",
+                            QSTRING)
+
+                # Returning "ERR" is less disruptive here, and since we have checked the
+                # IP addresses of the queried destination alredy, this seems to be more or
+                # less safe to do.
+                print("ERR")
+                continue
+
             for active_rbl in RBL_DOMAINS:
                 for idx, qip in enumerate(NSIPS):
                     try:
