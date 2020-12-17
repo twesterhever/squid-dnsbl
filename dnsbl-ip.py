@@ -147,13 +147,13 @@ def resolve_nameserver_address(domain: str):
         pass
 
     if not ns:
-            # In case there were none, try to trim the queried destination to its eSLD and try again...
-            esld = ".".join(tldextract.extract(domain)[1:3])
-            if not esld == domain:
-                ips = resolve_nameserver_address(esld)
-                return ips
-            else:
-                return None
+        # In case there were none, trim the queried destination to its eSLD and try again...
+        esld = ".".join(extractobject(domain)[1:3])
+        if not esld == domain:
+            ips = resolve_nameserver_address(esld)
+            return ips
+
+        return None
 
     ip6a = []
     ip4a = []
@@ -280,6 +280,7 @@ else:
 # Load tldextract module, if necessary...
 if config.getboolean("GENERAL", "QUERY_NAMESERVER_IPS"):
     import tldextract
+    extractobject = tldextract.TLDExtract(cache_file="/tmp/.tld_set")
 
 # Examine FQDNs of active RBLs...
 RBL_DOMAINS = []
