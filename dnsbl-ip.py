@@ -180,15 +180,64 @@ def resolve_nameserver_address(domain: str):
     return ips
 
 
-def query_rbl(rbldomain: str, ip: str, qstring: str):
-    """ Function call: query_rbl(list of active RBL domains,
-                                 list of IP addresses to query,
-                                 queried destination for logging purposes)
+def query_rbl(config: dict, rbldomain: tuple, queriedip: str, qstring: str, nsmode: bool = False):
+    """ Function call: query_rbl(ConfigParser object,
+                                 RBL domain tuple,
+                                 IP address to query,
+                                 queried destination for logging purposes,
+                                 is queried IP a nameserver IP [logging purposes]?)
 
     This function looks up the given IP addresses against the RBL. It returns a tuple
-    of a Boolean indiciating whether or not the IP address was listed, and a string
-    containing reply map information (if configured), being empty otherwise.
+    of a Boolean indiciating whether or not the IP address was listed (or None in case
+    the query failed), and a string containing reply map information (if configured),
+    being empty otherwise.
     """
+
+    returnstate = None
+    rblmapoutput = ""
+
+    try:
+        answer = RESOLVER.query((build_reverse_ip(queriedip) + "." + rbldomain[1]), 'A')
+    except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
+        returnstate = False
+    except (dns.exception.Timeout, dns.resolver.NoNameservers):
+        if nsmode:
+            LOGIT.warning("RBL '%s' failed to answer query for nameserver IP '%s' ('%s.%s', queried destination: '%s') within %s seconds, returning 'BH'",
+                          rbldomain[1], queriedip, build_reverse_ip(queriedip), rbldomain[1], qstring, RESOLVER.lifetime)
+        else:
+            LOGIT.warning("RBL '%s' failed to answer query for '%s' ('%s.%s', queried destination: '%s') within %s seconds, returning 'None' (i. e. 'BH') to calling function...",
+                          rbldomain[1], queriedip, build_reverse_ip(queriedip), rbldomain[1], qstring, RESOLVER.lifetime)
+    else:
+        returnstate = True
+
+        # Concatenate responses and log them...
+        responses = ""
+
+        if config.getboolean("GENERAL", "USE_REPLYMAP"):
+            rblmapoutput = "blacklist='"
+
+        for rdata in answer:
+            rdata = str(rdata)
+            responses = responses + rdata + " "
+
+            # If a RBL reply map is configured, the corresponding key to each DNS reply
+            # for this RBL is enumerated and returned as a combined string...
+            if config.getboolean("GENERAL", "USE_REPLYMAP"):
+                try:
+                    rblmapoutput += config[active_rbl[0]][rdata] + ", "
+                except KeyError:
+                    pass
+
+        rblmapoutput = rblmapoutput.strip(", ") + "'"
+
+        if nsmode:
+            LOGIT.warning("RBL hit on nameserver IP %s ('%s.%s') with response '%s' (queried destination: '%s')",
+                          queriedip, build_reverse_ip(queriedip), rbldomain[1], responses.strip(), qstring)
+        else:
+            LOGIT.warning("RBL hit on %s ('%s.%s') with response '%s' (queried destination: '%s')",
+                          queriedip, build_reverse_ip(queriedip), rbldomain[1], responses.strip(), qstring)
+
+    return (returnstate, rblmapoutput)
 
 
 def test_rbl_rfc5782(rbltdomain: str):
@@ -367,53 +416,22 @@ while True:
         LOGIT.info("Unable to resolve queried destination '%s', returning ERR...", QSTRING)
         print("ERR")
     else:
-        # Query each IP address against RBL and enumerate output...
-        qfailed = False
+        query_result = False
 
         for active_rbl in RBL_DOMAINS:
             for idx, qip in enumerate(IPS):
-                try:
-                    answer = RESOLVER.query((build_reverse_ip(qip) + "." + active_rbl[1]), 'A')
-                except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
-                    qfailed = True
-                except (dns.exception.Timeout, dns.resolver.NoNameservers):
-                    LOGIT.warning("RBL '%s' failed to answer query for '%s' within %s seconds, returning 'BH'",
-                                  active_rbl[1], build_reverse_ip(qip), RESOLVER.lifetime)
+                (rstate, replymapstring) = query_rbl(config, active_rbl, qip, QSTRING, False)
+
+                if rstate is None:
                     print("BH")
                     break
-                else:
-                    qfailed = False
 
-                    # Concatenate responses and log them...
-                    responses = ""
-                    rblmapoutput = "blacklist='"
-                    for rdata in answer:
-                        rdata = str(rdata)
-                        responses = responses + rdata + " "
-
-                        # If a RBL map file is present, the corresponding key to each DNS reply
-                        # for this RBL is enumerated and passed to Squid via additional keywords...
-                        if config.getboolean("GENERAL", "USE_REPLYMAP"):
-                            try:
-                                rblmapoutput += config[active_rbl[0]][rdata] + ", "
-                            except KeyError:
-                                pass
-
-                    LOGIT.warning("RBL hit on %s ('%s.%s') with response '%s' (queried destination: '%s')",
-                                  qip, build_reverse_ip(qip), active_rbl[1], responses.strip(), QSTRING)
-
-                    if config.getboolean("GENERAL", "USE_REPLYMAP"):
-                        rblmapoutput = rblmapoutput.strip(", ")
-                        rblmapoutput += "'"
-                        print("OK", rblmapoutput)
-                    else:
-                        print("OK")
+                elif rstate is True:
+                    query_result = True
+                    print("OK", replymapstring)
                     break
-            else:
-                continue
-            break
 
-        if qfailed and config.getboolean("GENERAL", "QUERY_NAMESERVER_IPS"):
+        if not query_result and config.getboolean("GENERAL", "QUERY_NAMESERVER_IPS"):
             if not NSIPS:
                 LOGIT.debug("Skipping nameserver checks for '%s' since no nameserver IPs could be enumerated",
                             QSTRING)
@@ -426,48 +444,18 @@ while True:
 
             for active_rbl in RBL_DOMAINS:
                 for idx, qip in enumerate(NSIPS):
-                    try:
-                        answer = RESOLVER.query((build_reverse_ip(qip) + "." + active_rbl[1]), 'A')
-                    except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
-                        qfailed = True
-                    except (dns.exception.Timeout, dns.resolver.NoNameservers):
-                        LOGIT.warning("RBL '%s' failed to answer query for nameserver IP '%s' (queried destination: '%s') within %s seconds, returning 'BH'",
-                                      active_rbl[1], build_reverse_ip(qip), QSTRING, RESOLVER.lifetime)
+                    (rstate, replymapstring) = query_rbl(config, active_rbl, qip, QSTRING, True)
+
+                    if rstate is None:
                         print("BH")
                         break
-                    else:
-                        qfailed = False
 
-                        # Concatenate responses and log them...
-                        responses = ""
-                        rblmapoutput = "blacklist='"
-                        for rdata in answer:
-                            rdata = str(rdata)
-                            responses = responses + rdata + " "
-
-                            # If a RBL map file is present, the corresponding key to each DNS reply
-                            # for this RBL is enumerated and passed to Squid via additional keywords...
-                            if config.getboolean("GENERAL", "USE_REPLYMAP"):
-                                try:
-                                    rblmapoutput += config[active_rbl[0]][rdata] + ", "
-                                except KeyError:
-                                    pass
-
-                        LOGIT.warning("RBL hit on nameserver IP %s ('%s.%s') with response '%s' (queried destination: '%s')",
-                                      qip, build_reverse_ip(qip), active_rbl[1], responses.strip(), QSTRING)
-
-                        if config.getboolean("GENERAL", "USE_REPLYMAP"):
-                            rblmapoutput = rblmapoutput.strip(", ")
-                            rblmapoutput += "'"
-                            print("OK", rblmapoutput)
-                        else:
-                            print("OK")
+                    elif rstate is True:
+                        query_result = True
+                        print("OK", replymapstring)
                         break
-                else:
-                    continue
-                break
 
-        if qfailed:
+        if not query_result:
             print("ERR")
 
 # EOF
