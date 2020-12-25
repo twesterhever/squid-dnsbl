@@ -19,6 +19,7 @@ import logging.handlers
 import os
 import re
 import sys
+import concurrent.futures
 from getpass import getuser
 import dns.resolver
 
@@ -93,6 +94,59 @@ def is_valid_domain(chkdomain: str):
             return False
 
     return True
+
+
+def query_uribl(config: dict, uribldomain: tuple, querydomain: str):
+    """ Function call: query_uribl(ConfigParser object,
+                                   URIBL domain tuple,
+                                   FQDN to query)
+
+    This function looks up the given FQDN addresses against the URIBL. It returns a tuple
+    of a Boolean indiciating whether or not the FQDN address was listed (or None in case
+    the query failed), and a string containing reply map information (if configured),
+    being empty otherwise.
+    """
+
+    returnstate = None
+    uriblmapoutput = ""
+
+    try:
+        answer = RESOLVER.query((querydomain + "." + uribldomain[1]), "A")
+    except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
+        returnstate = False
+    except (dns.exception.Timeout, dns.resolver.NoNameservers):
+        LOGIT.warning("URIBL '%s' failed to answer query for '%s' within %s seconds, returning 'BH'",
+                      uribldomain[1], querydomain, RESOLVER.lifetime)
+    else:
+        returnstate = True
+
+        # Concatenate responses and log them...
+        responses = ""
+
+        if config.getboolean("GENERAL", "USE_REPLYMAP"):
+            uriblmapoutput = "blacklist='"
+
+        for rdata in answer:
+            rdata = str(rdata)
+            responses = responses + rdata + " "
+
+            # If a URIBL map file is present, the corresponding key to each DNS reply
+            # for this URIBL is enumerated and passed to Squid via additional keywords...
+            if config.getboolean("GENERAL", "USE_REPLYMAP"):
+                try:
+                    uriblmapoutput += config[uribldomain[0]][rdata] + ", "
+                except KeyError:
+                    LOGIT.info("replymap is active, but configuration file does not contain data for %s (%s)",
+                               uribldomain[0], rdata)
+
+        uriblmapoutput = uriblmapoutput.strip(", ") + "'"
+
+        LOGIT.warning("URIBL hit on '%s.%s' with response '%s'",
+                      querydomain, uribldomain[1], responses.strip())
+
+    print(querydomain, uribldomain, returnstate, uriblmapoutput)
+
+    return (returnstate, uriblmapoutput)
 
 
 def test_rbl_rfc5782(uribltdomain: str):
@@ -250,50 +304,27 @@ while True:
         print("BH")
         continue
 
-    # Test if an A record can be found for this domain
-    # some exceptions in case of invalid domains (label too long, or empty)
-    # are also handled here
-    for active_uribl in URIBL_DOMAINS:
-        try:
-            answer = RESOLVER.query((QUERYDOMAIN + "." + active_uribl[1]), 'A')
-        except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
-            qfailed = True
-        except (dns.exception.Timeout, dns.resolver.NoNameservers):
-            LOGIT.warning("URIBL '%s' failed to answer query for '%s' within %s seconds, returning 'BH'",
-                          active_uribl[1], QUERYDOMAIN, RESOLVER.lifetime)
-            print("BH")
-            break
-        else:
-            qfailed = False
+    query_result = False
 
-            # Concatenate responses and log them...
-            responses = ""
-            uriblmapoutput = "blacklist='"
-            for rdata in answer:
-                rdata = str(rdata)
-                responses = responses + rdata + " "
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        tasks = []
 
-                # If a URIBL map file is present, the corresponding key to each DNS reply
-                # for this URIBL is enumerated and passed to Squid via additional keywords...
-                if config.getboolean("GENERAL", "USE_REPLYMAP"):
-                    try:
-                        uriblmapoutput += config[active_uribl[0]][rdata] + ", "
-                    except KeyError:
-                        LOGIT.info("replymap is active, but configuration file does not contain data for %s (%s)",
-                                   active_uribl[0], rdata)
+        for active_uribl in URIBL_DOMAINS:
+            tasks.append(executor.submit(query_uribl, config, active_uribl, QUERYDOMAIN))
 
-                LOGIT.warning("URIBL hit on '%s.%s' with response '%s'",
-                              QUERYDOMAIN, active_uribl[1], responses.strip())
+        for singlequery in concurrent.futures.as_completed(tasks):
+            (rstate, replymapstring) = singlequery.result()
 
-            if config.getboolean("GENERAL", "USE_REPLYMAP"):
-                uriblmapoutput = uriblmapoutput.strip(", ")
-                uriblmapoutput += "'"
-                print("OK", uriblmapoutput)
-            else:
-                print("OK")
-            break
+            if rstate is None:
+                print("BH")
+                break
 
-    if qfailed:
+            elif rstate is True:
+                query_result = True
+                print("OK", replymapstring)
+                break
+
+    if not query_result:
         print("ERR")
 
 # EOF

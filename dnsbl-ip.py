@@ -197,7 +197,7 @@ def query_rbl(config: dict, rbldomain: tuple, queriedip: str, qstring: str, nsmo
     rblmapoutput = ""
 
     try:
-        answer = RESOLVER.query((build_reverse_ip(queriedip) + "." + rbldomain[1]), 'A')
+        answer = RESOLVER.query((build_reverse_ip(queriedip) + "." + rbldomain[1]), "A")
     except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
         returnstate = False
     except (dns.exception.Timeout, dns.resolver.NoNameservers):
