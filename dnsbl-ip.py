@@ -228,7 +228,8 @@ def query_rbl(config: dict, rbldomain: tuple, queriedip: str, qstring: str, nsmo
                 except KeyError:
                     pass
 
-        rblmapoutput = rblmapoutput.strip(", ") + "'"
+        if config.getboolean("GENERAL", "USE_REPLYMAP"):
+            rblmapoutput = rblmapoutput.strip(", ") + "'"
 
         if nsmode:
             LOGIT.warning("RBL hit on nameserver IP %s ('%s.%s') with response '%s' (queried destination: '%s')",

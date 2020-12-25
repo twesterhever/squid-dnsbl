@@ -139,7 +139,8 @@ def query_uribl(config: dict, uribldomain: tuple, querydomain: str):
                     LOGIT.info("replymap is active, but configuration file does not contain data for %s (%s)",
                                uribldomain[0], rdata)
 
-        uriblmapoutput = uriblmapoutput.strip(", ") + "'"
+        if config.getboolean("GENERAL", "USE_REPLYMAP"):
+            uriblmapoutput = uriblmapoutput.strip(", ") + "'"
 
         LOGIT.warning("URIBL hit on '%s.%s' with response '%s'",
                       querydomain, uribldomain[1], responses.strip())
