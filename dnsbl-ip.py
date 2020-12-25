@@ -162,7 +162,6 @@ def resolve_nameserver_address(domain: str):
 
     # Resolve A and AAAA records of enumerated nameservers in parallel...
     with concurrent.futures.ThreadPoolExecutor() as executor:
-
         tasks = []
 
         for singlens in ns:
@@ -179,6 +178,17 @@ def resolve_nameserver_address(domain: str):
                 pass
 
     return ips
+
+
+def query_rbl(rbldomain: str, ip: str, qstring: str):
+    """ Function call: query_rbl(list of active RBL domains,
+                                 list of IP addresses to query,
+                                 queried destination for logging purposes)
+
+    This function looks up the given IP addresses against the RBL. It returns a tuple
+    of a Boolean indiciating whether or not the IP address was listed, and a string
+    containing reply map information (if configured), being empty otherwise.
+    """
 
 
 def test_rbl_rfc5782(rbltdomain: str):
