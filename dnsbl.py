@@ -144,8 +144,6 @@ def query_uribl(config: dict, uribldomain: tuple, querydomain: str):
         LOGIT.warning("URIBL hit on '%s.%s' with response '%s'",
                       querydomain, uribldomain[1], responses.strip())
 
-    print(querydomain, uribldomain, returnstate, uriblmapoutput)
-
     return (returnstate, uriblmapoutput)
 
 
