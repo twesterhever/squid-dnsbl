@@ -112,10 +112,10 @@ def resolve_addresses(domain: str):
 
     # Resolve A and AAAA records of that domain in parallel...
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        query_a = executor.submit(RESOLVER.query, domain, "A")
-        query_aaaa = executor.submit(RESOLVER.query, domain, "AAAA")
+        tasks = []
 
-        tasks = [query_a, query_aaaa]
+        for qtype in ["A", "AAAA"]:
+            tasks.append(executor.submit(RESOLVER.query, domain, qtype))
 
         for singlequery in concurrent.futures.as_completed(tasks):
             # ... and write the results into the IP address list
@@ -143,7 +143,7 @@ def resolve_nameserver_address(domain: str):
     # Enumerate nameservers...
     ns = []
     try:
-        for resolvedns in RESOLVER.query(domain, 'NS'):
+        for resolvedns in RESOLVER.query(domain, "NS"):
             ns.append(str(resolvedns))
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers, dns.exception.Timeout, ValueError):
         pass
@@ -166,10 +166,8 @@ def resolve_nameserver_address(domain: str):
         tasks = []
 
         for singlens in ns:
-            query_a = executor.submit(RESOLVER.query, singlens, "A")
-            query_aaaa = executor.submit(RESOLVER.query, singlens, "AAAA")
-
-            tasks.extend([query_a, query_aaaa])
+            for qtype in ["A", "AAAA"]:
+                tasks.append(executor.submit(RESOLVER.query, singlens, qtype))
 
         for singlequery in concurrent.futures.as_completed(tasks):
             # ... and write the results into the IP address list
