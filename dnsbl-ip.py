@@ -418,9 +418,15 @@ while True:
     else:
         query_result = False
 
-        for active_rbl in RBL_DOMAINS:
-            for idx, qip in enumerate(IPS):
-                (rstate, replymapstring) = query_rbl(config, active_rbl, qip, QSTRING, False)
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            tasks = []
+
+            for active_rbl in RBL_DOMAINS:
+                for idx, qip in enumerate(IPS):
+                    tasks.append(executor.submit(query_rbl, config, active_rbl, qip, QSTRING, False))
+
+            for singlequery in concurrent.futures.as_completed(tasks):
+                (rstate, replymapstring) = singlequery.result()
 
                 if rstate is None:
                     print("BH")
@@ -442,9 +448,15 @@ while True:
                 print("ERR")
                 continue
 
-            for active_rbl in RBL_DOMAINS:
-                for idx, qip in enumerate(NSIPS):
-                    (rstate, replymapstring) = query_rbl(config, active_rbl, qip, QSTRING, True)
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                tasks = []
+
+                for active_rbl in RBL_DOMAINS:
+                    for idx, qip in enumerate(NSIPS):
+                        tasks.append(executor.submit(query_rbl, config, active_rbl, qip, QSTRING, True))
+
+                for singlequery in concurrent.futures.as_completed(tasks):
+                    (rstate, replymapstring) = singlequery.result()
 
                     if rstate is None:
                         print("BH")
