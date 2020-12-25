@@ -19,6 +19,7 @@ import logging.handlers
 import os
 import re
 import sys
+import concurrent.futures
 from getpass import getuser
 import dns.resolver
 
@@ -106,24 +107,25 @@ def resolve_addresses(domain: str):
     if not is_valid_domain(domain):
         return None
 
-    # Enumerate IPv6 addresses...
-    ip6a = []
-    try:
-        for resolvedip in RESOLVER.query(domain, 'AAAA'):
-            ip6a.append(str(resolvedip))
-    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers, dns.exception.Timeout, ValueError):
-        pass
+    # List of enumerated IPs, default empty...
+    ips = []
 
-    # Enumerate IPv4 addresses...
-    ip4a = []
-    try:
-        for resolvedip in RESOLVER.query(domain, 'A'):
-            ip4a.append(str(resolvedip))
-    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers, dns.exception.Timeout, ValueError):
-        pass
+    # Resolve A and AAAA records of that domain in parallel...
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        query_a = executor.submit(RESOLVER.query, domain, "A")
+        query_aaaa = executor.submit(RESOLVER.query, domain, "AAAA")
 
-    # Assemble all IP addresses and return them back
-    ips = ip6a + ip4a
+        tasks = [query_a, query_aaaa]
+
+        for singlequery in concurrent.futures.as_completed(tasks):
+            # ... and write the results into the IP address list
+            try:
+                for singleip in singlequery.result():
+                    ips.append(str(singleip))
+            except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers, dns.exception.Timeout, ValueError):
+                # Catch possible DNS exceptions...
+                pass
+
     return ips
 
 
@@ -155,26 +157,29 @@ def resolve_nameserver_address(domain: str):
 
         return None
 
-    ip6a = []
-    ip4a = []
+    # List of enumerated IPs, default empty...
+    ips = []
 
-    for singlens in ns:
-        # Enumerate IPv6 addresses...
-        try:
-            for resolvedip in RESOLVER.query(singlens, 'AAAA'):
-                ip6a.append(str(resolvedip))
-        except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers, dns.exception.Timeout, ValueError):
-            pass
+    # Resolve A and AAAA records of enumerated nameservers in parallel...
+    with concurrent.futures.ThreadPoolExecutor() as executor:
 
-        # Enumerate IPv4 addresses...
-        try:
-            for resolvedip in RESOLVER.query(singlens, 'A'):
-                ip4a.append(str(resolvedip))
-        except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers, dns.exception.Timeout, ValueError):
-            pass
+        tasks = []
 
-    # Assemble all IP addresses and return them back
-    ips = ip6a + ip4a
+        for singlens in ns:
+            query_a = executor.submit(RESOLVER.query, singlens, "A")
+            query_aaaa = executor.submit(RESOLVER.query, singlens, "AAAA")
+
+            tasks.extend([query_a, query_aaaa])
+
+        for singlequery in concurrent.futures.as_completed(tasks):
+            # ... and write the results into the IP address list
+            try:
+                for singleip in singlequery.result():
+                    ips.append(str(singleip))
+            except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers, dns.exception.Timeout, ValueError):
+                # Catch possible DNS exceptions...
+                pass
+
     return ips
 
 
