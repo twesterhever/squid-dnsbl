@@ -458,11 +458,13 @@ while True:
 
                 if rstate is None:
                     print("BH")
+                    executor.shutdown(wait=False)
                     break
 
                 elif rstate is True:
                     query_result = True
                     print("OK", replymapstring)
+                    executor.shutdown(wait=False)
                     break
 
         if not query_result:
