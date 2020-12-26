@@ -396,13 +396,15 @@ while True:
     try:
         IPS = [ipaddress.ip_address(QSTRING)]
     except (ValueError, AttributeError):
-        # In this case, we are probably dealing with a domain
-        IPS = resolve_addresses(QSTRING.strip(".") + ".")
+        # In this case, we are most probably dealing with a domain...
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            IPS = executor.submit(resolve_addresses, QSTRING.strip(".") + ".").result()
 
-        # In case nameserver checks are enabled and we are dealing with a domain, resolve their
-        # nameserver IP addresses as well...
-        if config.getboolean("GENERAL", "QUERY_NAMESERVER_IPS"):
-            NSIPS = resolve_nameserver_address(QSTRING.strip(".") + ".")
+            # In case nameserver checks are enabled and we are dealing with a domain, resolve
+            # their nameserver IP addresses as well...
+            if config.getboolean("GENERAL", "QUERY_NAMESERVER_IPS"):
+                NSIPS = executor.submit(resolve_nameserver_address,
+                                        QSTRING.strip(".") + ".").result()
     else:
         NSIPS = []
 
