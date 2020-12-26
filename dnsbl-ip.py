@@ -126,6 +126,9 @@ def resolve_addresses(domain: str):
                 # Catch possible DNS exceptions...
                 pass
 
+    # Deduplicate...
+    ips = set(ips)
+
     return ips
 
 
@@ -176,6 +179,9 @@ def resolve_nameserver_address(domain: str):
             except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers, dns.exception.Timeout, ValueError):
                 # Catch possible DNS exceptions...
                 pass
+
+    # Deduplicate...
+    ips = set(ips)
 
     return ips
 
