@@ -424,7 +424,26 @@ while True:
 
             for active_rbl in RBL_DOMAINS:
                 for idx, qip in enumerate(IPS):
-                    tasks.append(executor.submit(query_rbl, config, active_rbl, qip, QSTRING, False))
+                    tasks.append(executor.submit(query_rbl,
+                                                 config,
+                                                 active_rbl,
+                                                 qip,
+                                                 QSTRING,
+                                                 False))
+
+            if config.getboolean("GENERAL", "QUERY_NAMESERVER_IPS"):
+                if not NSIPS:
+                    LOGIT.debug("Skipping nameserver checks for '%s' since no nameserver IPs could be enumerated",
+                                QSTRING)
+                else:
+                    for active_rbl in RBL_DOMAINS:
+                        for idx, qip in enumerate(NSIPS):
+                            tasks.append(executor.submit(query_rbl,
+                                                         config,
+                                                         active_rbl,
+                                                         qip,
+                                                         QSTRING,
+                                                         True))
 
             for singlequery in concurrent.futures.as_completed(tasks):
                 (rstate, replymapstring) = singlequery.result()
@@ -437,36 +456,6 @@ while True:
                     query_result = True
                     print("OK", replymapstring)
                     break
-
-        if not query_result and config.getboolean("GENERAL", "QUERY_NAMESERVER_IPS"):
-            if not NSIPS:
-                LOGIT.debug("Skipping nameserver checks for '%s' since no nameserver IPs could be enumerated",
-                            QSTRING)
-
-                # Returning "ERR" is less disruptive here, and since we have checked the
-                # IP addresses of the queried destination alredy, this seems to be more or
-                # less safe to do.
-                print("ERR")
-                continue
-
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                tasks = []
-
-                for active_rbl in RBL_DOMAINS:
-                    for idx, qip in enumerate(NSIPS):
-                        tasks.append(executor.submit(query_rbl, config, active_rbl, qip, QSTRING, True))
-
-                for singlequery in concurrent.futures.as_completed(tasks):
-                    (rstate, replymapstring) = singlequery.result()
-
-                    if rstate is None:
-                        print("BH")
-                        break
-
-                    elif rstate is True:
-                        query_result = True
-                        print("OK", replymapstring)
-                        break
 
         if not query_result:
             print("ERR")
