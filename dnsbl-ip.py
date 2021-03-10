@@ -219,9 +219,6 @@ def query_rbl(config: dict, rbldomain: tuple, queriedip: str, qstring: str, nsmo
         # Concatenate responses and log them...
         responses = ""
 
-        if config.getboolean("GENERAL", "USE_REPLYMAP"):
-            rblmapoutput = "blacklist='"
-
         for rdata in answer:
             rdata = str(rdata)
             responses = responses + rdata + " "
@@ -230,12 +227,9 @@ def query_rbl(config: dict, rbldomain: tuple, queriedip: str, qstring: str, nsmo
             # for this RBL is enumerated and returned as a combined string...
             if config.getboolean("GENERAL", "USE_REPLYMAP"):
                 try:
-                    rblmapoutput += config[active_rbl[0]][rdata] + ", "
+                    rblmapoutput += config[active_rbl[0]][rdata] + " (" + str(queriedip) + "), "
                 except KeyError:
                     pass
-
-        if config.getboolean("GENERAL", "USE_REPLYMAP"):
-            rblmapoutput = rblmapoutput.strip(", ") + "'"
 
         if nsmode:
             LOGIT.warning("RBL hit on nameserver IP %s ('%s.%s') with response '%s' (queried destination: '%s')",
@@ -427,6 +421,9 @@ while True:
     else:
         query_result = False
 
+        if config.getboolean("GENERAL", "USE_REPLYMAP"):
+            replystring = "blacklist='"
+
         with concurrent.futures.ThreadPoolExecutor() as executor:
             tasks = []
 
@@ -463,11 +460,15 @@ while True:
 
                 elif rstate is True:
                     query_result = True
-                    print("OK", replymapstring)
-                    executor.shutdown(wait=False)
-                    break
 
-        if not query_result:
+                    if replystring:
+                        replystring = replystring + replymapstring
+
+        if query_result and config.getboolean("GENERAL", "USE_REPLYMAP"):
+            print("OK", replystring.strip(", ") + "'")
+        elif query_result:
+            print("OK")
+        else:
             print("ERR")
 
 # EOF

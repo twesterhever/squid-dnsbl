@@ -123,9 +123,6 @@ def query_uribl(config: dict, uribldomain: tuple, querydomain: str):
         # Concatenate responses and log them...
         responses = ""
 
-        if config.getboolean("GENERAL", "USE_REPLYMAP"):
-            uriblmapoutput = "blacklist='"
-
         for rdata in answer:
             rdata = str(rdata)
             responses = responses + rdata + " "
@@ -134,13 +131,10 @@ def query_uribl(config: dict, uribldomain: tuple, querydomain: str):
             # for this URIBL is enumerated and passed to Squid via additional keywords...
             if config.getboolean("GENERAL", "USE_REPLYMAP"):
                 try:
-                    uriblmapoutput += config[uribldomain[0]][rdata] + ", "
+                    uriblmapoutput += config[uribldomain[0]][rdata] + " (" + querydomain + "), "
                 except KeyError:
                     LOGIT.info("replymap is active, but configuration file does not contain data for %s (%s)",
                                uribldomain[0], rdata)
-
-        if config.getboolean("GENERAL", "USE_REPLYMAP"):
-            uriblmapoutput = uriblmapoutput.strip(", ") + "'"
 
         LOGIT.warning("URIBL hit on '%s.%s' with response '%s'",
                       querydomain, uribldomain[1], responses.strip())
@@ -305,6 +299,9 @@ while True:
 
     query_result = False
 
+    if config.getboolean("GENERAL", "USE_REPLYMAP"):
+        replystring = "blacklist='"
+
     with concurrent.futures.ThreadPoolExecutor() as executor:
         tasks = []
 
@@ -320,10 +317,14 @@ while True:
 
             elif rstate is True:
                 query_result = True
-                print("OK", replymapstring)
-                break
+                if replystring:
+                    replystring = replystring + replymapstring
 
-    if not query_result:
+    if query_result and config.getboolean("GENERAL", "USE_REPLYMAP"):
+        print("OK", replystring.strip(", ") + "'")
+    elif query_result:
+        print("OK")
+    else:
         print("ERR")
 
 # EOF
