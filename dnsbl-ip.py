@@ -422,7 +422,7 @@ while True:
         query_result = False
 
         if config.getboolean("GENERAL", "USE_REPLYMAP"):
-            replystring = "blacklist='"
+            replystring = "message='"
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             tasks = []
