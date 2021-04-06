@@ -461,7 +461,7 @@ while True:
                 elif rstate is True:
                     query_result = True
 
-                    if replystring:
+                    if config.getboolean("GENERAL", "USE_REPLYMAP"):
                         replystring = replystring + replymapstring
 
         if query_result and config.getboolean("GENERAL", "USE_REPLYMAP"):
