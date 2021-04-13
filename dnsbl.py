@@ -272,7 +272,7 @@ else:
 while True:
     try:
         QUERYDOMAIN = str(sys.stdin.readline().rstrip().split()[0])
-    except KeyboardInterrupt:
+    except (IndexError, KeyboardInterrupt):
         sys.exit(127)
 
     # Abort if domain was empty (no STDIN input received)
