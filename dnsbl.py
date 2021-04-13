@@ -181,6 +181,23 @@ def test_rbl_rfc5782(uribltdomain: str):
     return True
 
 
+def test_all_uribls(uribl_domains: list):
+    """ Function call: test_all_uribls(list of URIBLs enabled)
+
+    Abstraction layer function for performing RFC 5782 (section 5) tests for all
+    URIBLs configured and enabled. Returns True if all of them pass these tests, and
+    False otherwise.
+    """
+
+    for single_uribl in uribl_domains:
+        if not test_rbl_rfc5782(single_uribl[1]):
+            # in this case, an URIBL has failed the test...
+            LOGIT.warning("RFC 5782 (section 5) test for URIBL '%s' failed", single_uribl[1])
+            return False
+
+    return True
+
+
 if os.path.isfile(CFILE) and not os.path.islink(CFILE):
     LOGIT.debug("Attempting to read configuration from '%s' ...", CFILE)
 
@@ -249,12 +266,7 @@ RESOLVER = dns.resolver.Resolver()
 RESOLVER.lifetime = config.getint("GENERAL", "RESOLVER_TIMEOUT")
 
 # Test if specified URIBLs work correctly (according to RFC 5782 [section 5])...
-PASSED_RFC_TEST = True
-for active_uribl in URIBL_DOMAINS:
-    if not test_rbl_rfc5782(active_uribl[1]):
-        # in this case, an URIBL has failed the test...
-        LOGIT.warning("RFC 5782 (section 5) test for URIBL '%s' failed", active_uribl[1])
-        PASSED_RFC_TEST = False
+PASSED_RFC_TEST = test_all_uribls(URIBL_DOMAINS)
 
 # Depending on the configuration at the beginning of this script, further
 # queries will or will not result in BH every time. Adjust log messages...

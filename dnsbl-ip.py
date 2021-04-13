@@ -283,6 +283,23 @@ def test_rbl_rfc5782(rbltdomain: str):
     return True
 
 
+def test_all_rbls(rbl_domains: list):
+    """ Function call: test_all_rbls(list of RBLSs enabled)
+
+    Abstraction layer function for performing RFC 5782 (section 5) tests for all
+    RBLs configured and enabled. Returns True if all of them pass these tests, and
+    False otherwise.
+    """
+
+    for single_rbl in rbl_domains:
+        if not test_rbl_rfc5782(single_rbl[1]):
+            # in this case, an RBL has failed the test...
+            LOGIT.warning("RFC 5782 (section 5) test for RBL '%s' failed", single_rbl[1])
+            return False
+
+    return True
+
+
 if os.path.isfile(CFILE) and not os.path.islink(CFILE):
     LOGIT.debug("Attempting to read configuration from '%s' ...", CFILE)
 
@@ -357,12 +374,7 @@ RESOLVER = dns.resolver.Resolver()
 RESOLVER.lifetime = config.getint("GENERAL", "RESOLVER_TIMEOUT")
 
 # Test if specified RBLs work correctly (according to RFC 5782 [section 5])...
-PASSED_RFC_TEST = True
-for active_rbl in RBL_DOMAINS:
-    if not test_rbl_rfc5782(active_rbl[1]):
-        # In this case, an RBL has failed the test...
-        LOGIT.warning("RFC 5782 (section 5) test for RBL '%s' failed", active_rbl[1])
-        PASSED_RFC_TEST = False
+PASSED_RFC_TEST = test_all_rbls(RBL_DOMAINS)
 
 # Depending on the configuration at the beginning of this script, further
 # queries will or will not result in BH every time. Adjust log messages...
