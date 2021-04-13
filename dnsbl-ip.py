@@ -399,10 +399,17 @@ while True:
     if not QSTRING:
         break
 
-    # Immediately return BH if configuration requires to do so...
+    # If the configuration requires a "fail close" behaviour (which is strongly recommended),
+    # perform RFC 5782 (section 5) tests again every time a request is received. The rationale
+    # for this is to avoid indefinitely broken DNSBL helpers, in case a RBL was unavailable
+    # for a short time at the beginning of operation. Otherwise, manual interaction is required
+    # to return to an operational state - which is considered much worse in productive environments.
     if config.getboolean("GENERAL", "RETURN_BH_ON_FAILED_RFC_TEST") and not PASSED_RFC_TEST:
-        print("BH")
-        continue
+        if not test_all_rbls(RBL_DOMAINS):
+            print("BH")
+            continue
+        else:
+            PASSED_RFC_TEST = True
 
     # Enumerate whether query string is a domain or an IP address...
     try:
