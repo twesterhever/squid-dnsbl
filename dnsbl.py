@@ -319,7 +319,7 @@ while True:
     query_result = False
 
     if config.getboolean("GENERAL", "USE_REPLYMAP"):
-        replystring = "message='"
+        replystring = "message=\""
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         tasks = []
@@ -340,7 +340,7 @@ while True:
                     replystring = replystring + replymapstring
 
     if query_result and config.getboolean("GENERAL", "USE_REPLYMAP"):
-        print("OK", replystring.strip(", ") + "'")
+        print("OK", replystring.strip(", ") + "\"")
     elif query_result:
         print("OK")
     else:
