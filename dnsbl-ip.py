@@ -229,7 +229,9 @@ def query_rbl(config: dict, rbldomain: tuple, queriedip: str, qstring: str, nsmo
                 try:
                     rblmapoutput += config[active_rbl[0]][rdata] + " (" + str(queriedip) + "), "
                 except KeyError:
-                    pass
+                    LOGIT.info("replymap is active, but configuration file does not contain data for %s (%s)",
+                               active_rbl[0], rdata)
+                    rblmapoutput = "N/A "
 
         if nsmode:
             LOGIT.warning("RBL hit on nameserver IP %s ('%s.%s') with response '%s' (queried destination: '%s')",
@@ -484,7 +486,7 @@ while True:
                         replystring = replystring + replymapstring
 
         if query_result and config.getboolean("GENERAL", "USE_REPLYMAP"):
-            print("OK", replystring.strip(", ") + "\"")
+            print("OK", replystring.strip(", ").strip() + "\"")
         elif query_result:
             print("OK")
         else:
