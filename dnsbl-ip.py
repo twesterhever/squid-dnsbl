@@ -474,7 +474,10 @@ while True:
             for singlequery in concurrent.futures.as_completed(tasks):
                 (rstate, replymapstring) = singlequery.result()
 
+                # This should not happen, returning BH in such cases and log a warning...
                 if rstate is None:
+                    LOGIT.warning("got emtpy return state from concurrent task for destination '%s', returning 'BH' - please report this",
+                                  QSTRING)
                     print("BH")
                     executor.shutdown(wait=False)
                     break
