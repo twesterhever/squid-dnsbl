@@ -281,7 +281,7 @@ def test_rbl_rfc5782(rbltdomain: str):
     else:
         LOGIT.debug("RBL '%s' is listing testpoint address 127.0.0.2 - good", rbltdomain)
 
-    LOGIT.info("RBL '%s' seems to be operational and compliant to RFC 5782 (section 5) - good", rbltdomain)
+    LOGIT.debug("RBL '%s' seems to be operational and compliant to RFC 5782 (section 5) - good", rbltdomain)
     return True
 
 
@@ -346,7 +346,7 @@ if os.path.isfile(CFILE) and not os.path.islink(CFILE):
         print("BH")
         sys.exit(127)
 
-    LOGIT.info("Configuation sanity tests passed, good, processing...")
+    LOGIT.debug("Configuation sanity tests passed, good, processing...")
 
     # Apply configured logging level to avoid INFO/DEBUG clutter (thanks, cf5cec3a)...
     LOGIT.setLevel({"DEBUG": logging.DEBUG,
