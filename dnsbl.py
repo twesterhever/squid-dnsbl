@@ -311,10 +311,11 @@ while True:
         print("ERR")
         continue
 
-    # Check if it is a valid domain
+    # Check if it is a valid domain, and return ERR instead of BH for the same reasons
+    # as discussed in dnsbl-ip.py, "if not IPS" (DoS attack prevention).
     if not is_valid_domain(QUERYDOMAIN):
-        LOGIT.info("queried destination '%s' is not a valid FQDN, returning 'BH'", QUERYDOMAIN)
-        print("BH")
+        LOGIT.info("queried destination '%s' is not a valid FQDN, returning 'ERR'", QUERYDOMAIN)
+        print("ERR")
         continue
 
     query_result = False
