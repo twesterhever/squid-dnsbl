@@ -437,7 +437,7 @@ while True:
         # ERR is considered to be safe here, as Squid won't be able to establish a
         # connection anyway, no matter whether the destination is blacklisted or not,
         # provided both Squid and this script use the same DNS resolver.
-        LOGIT.info("Unable to resolve queried destination '%s', returning ERR...", QSTRING)
+        LOGIT.info("Unable to resolve A/AAAA record of queried destination '%s', returning ERR...", QSTRING)
         print("ERR")
     else:
         query_result = False
