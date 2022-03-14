@@ -111,7 +111,7 @@ def query_uribl(config: dict, uribldomain: tuple, querydomain: str):
     uriblmapoutput = ""
 
     try:
-        answer = RESOLVER.query((querydomain + "." + uribldomain[1]), "A")
+        answer = RESOLVER.resolve((querydomain + "." + uribldomain[1]), "A")
     except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
         returnstate = False
     except (dns.exception.Timeout, dns.resolver.NoNameservers):
@@ -154,7 +154,7 @@ def test_rbl_rfc5782(uribltdomain: str):
 
     # Test if "invalid" is not listed
     try:
-        RESOLVER.query("invalid." + uribltdomain, 'A')
+        RESOLVER.resolve("invalid." + uribltdomain, 'A')
     except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
         LOGIT.debug("URIBL '%s' is not listing testpoint address 'invalid' - good", uribltdomain)
     except (dns.exception.Timeout, dns.resolver.NoNameservers):
@@ -167,7 +167,7 @@ def test_rbl_rfc5782(uribltdomain: str):
 
     # Test if "test" is listed
     try:
-        RESOLVER.query("test." + uribltdomain, 'A')
+        RESOLVER.resolve("test." + uribltdomain, 'A')
     except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
         LOGIT.error("URIBL '%s' is violating RFC 5782 (section 5) as it does not list 'test'", uribltdomain)
         return False
