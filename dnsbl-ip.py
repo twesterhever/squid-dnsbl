@@ -115,7 +115,7 @@ def resolve_addresses(domain: str):
         tasks = []
 
         for qtype in ["A", "AAAA"]:
-            tasks.append(executor.submit(RESOLVER.query, domain, qtype))
+            tasks.append(executor.submit(RESOLVER.resolve, domain, qtype))
 
         for singlequery in concurrent.futures.as_completed(tasks):
             # ... and write the results into the IP address list
@@ -146,7 +146,7 @@ def resolve_nameserver_address(domain: str):
     # Enumerate nameservers...
     ns = []
     try:
-        for resolvedns in RESOLVER.query(domain, "NS"):
+        for resolvedns in RESOLVER.resolve(domain, "NS"):
             ns.append(str(resolvedns))
     except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers, dns.exception.Timeout, ValueError):
         pass
@@ -169,7 +169,7 @@ def resolve_nameserver_address(domain: str):
 
         for singlens in ns:
             for qtype in ["A", "AAAA"]:
-                tasks.append(executor.submit(RESOLVER.query, singlens, qtype))
+                tasks.append(executor.submit(RESOLVER.resolve, singlens, qtype))
 
         for singlequery in concurrent.futures.as_completed(tasks):
             # ... and write the results into the IP address list
@@ -203,7 +203,7 @@ def query_rbl(config: dict, rbldomain: tuple, queriedip: str, qstring: str, nsmo
     rblmapoutput = ""
 
     try:
-        answer = RESOLVER.query((build_reverse_ip(queriedip) + "." + rbldomain[1]), "A")
+        answer = RESOLVER.resolve((build_reverse_ip(queriedip) + "." + rbldomain[1]), "A")
     except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
         returnstate = False
     except (dns.exception.Timeout, dns.resolver.NoNameservers):
@@ -257,7 +257,7 @@ def test_rbl_rfc5782(rbltdomain: str):
 
     # Test if 127.0.0.1 is not listed
     try:
-        RESOLVER.query((build_reverse_ip("127.0.0.1") + "." + rbltdomain), 'A')
+        RESOLVER.resolve((build_reverse_ip("127.0.0.1") + "." + rbltdomain), 'A')
     except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
         LOGIT.debug("RBL '%s' is not listing testpoint address 127.0.0.1 - good", rbltdomain)
     except (dns.exception.Timeout, dns.resolver.NoNameservers):
@@ -270,7 +270,7 @@ def test_rbl_rfc5782(rbltdomain: str):
 
     # Test if 127.0.0.2 is listed
     try:
-        RESOLVER.query((build_reverse_ip("127.0.0.2") + "." + rbltdomain), 'A')
+        RESOLVER.resolve((build_reverse_ip("127.0.0.2") + "." + rbltdomain), 'A')
     except (dns.resolver.NXDOMAIN, dns.name.LabelTooLong, dns.name.EmptyLabel):
         LOGIT.error("RBL '%s' is violating RFC 5782 (section 5) as it does not list 127.0.0.2", rbltdomain)
         return False
