@@ -7,18 +7,20 @@ well-known ports.
 While Squid is able to handle file based blocklists by taking advantage of
 [SquidGuard](http://squidguard.org/), the usage of DNSBLs has never been that
 easy. There is
-[a patch available](http://squidguard.org/Downloads/Contrib/squidGuard-1.4-dnsbl.patch)
-which adds this feature, but it did not seem to made it into many distribution
-packages.
+[a patch available](https://web.archive.org/web/20170910013439/http://squidguard.org/Downloads/Contrib/squidGuard-1.4-dnsbl.patch)
+(memento) which adds this feature, but it did not seem to made it into many
+distribution packages.
 
 Worse, SquidGuard does not support querying resolved IP addresses of a domain
-against RBLs. Since cyber criminals tend to host multiple domains on the same
-IP address - especially for IPv4 networks -, this might be useful.
+against RBLs, no matter if its the actual `A`/`AAAA` record of the destination,
+or any involved nameserver IP address. However, both are useful to take into
+account as well, as nameserver IP addresses tend to be more static, and miscreants
+are often find to host multiple malicious domains on the very same infrastrucutre.
 
 This repository aims to close this gap by providing to Python 3.x based scripts
-which can be accessed by Squid as external helpers. In order to work under
-chrooted Squid instances on BSD, `/usr/bin/env -S python3 -u` needs to be changed
-to `/usr/local/bin/python3 -u`.
+which can be accessed by Squid as external helpers. In order to work under `chroot`'d
+Squid instances on BSD, `/usr/bin/env -S python3 -u` needs to be changed to
+`/usr/local/bin/python3 -u`.
 
 ## dnsbl.py
 This script looks up domains against one or more [URIBL](https://en.wikipedia.org/wiki/DNSBL#URI_DNSBL)
@@ -47,12 +49,13 @@ be listed in _any_ configured RBL, and `ERR` if _none_ of them were.
 
 Please refer to `example-configurations/dnsbl-ip.conf` for a configuration file sample.
 
-This script handles both IPv4 and IPv6 addresses.
+This script handles both IPv4 and IPv6 addresses, and is also capable of querying
+the IP addresses enumerated for a FQDN's nameservers against the configured RBLs.
 
 Be careful in your RBL choice: For example, if the [Spamhaus ZEN](https://www.spamhaus.org/zen/) RBL is used,
-connection attempts to dynamic IP ranges will be blocked, too. A combination of
-Spamhaus SBL and XBL lists (`sbl-xbl.spamhaus.org`) is therefore considered to be
-a safer choice for productive environments.
+connection attempts to dynamic IP ranges will be blocked, too, commonly resulting in
+way too many false positives. The combined Spamhaus SBL and XBL list (`sbl-xbl.spamhaus.org`)
+is therefore considered to be a better choice.
 
 ## Advanced Settings
 There are some settings for advanced usage of these DNSBL helpers which can be configured
@@ -99,7 +102,7 @@ the DNS resolver configured.
 
 Strict QNAME minimization, particular in combination with `stub-zones`, effectively
 renders DNSBLs unusable and cannot be reliably detected by RFC 5782 (section 5) tests
-against URIBLs. You are therefore _strongly_ encouraged not to enable strict QNAME
+against URIBLs. It is therefore strongly encouraged not to enable strict QNAME
 minimization on the DNS resolver used.
 
 ## Example Squid configuration
