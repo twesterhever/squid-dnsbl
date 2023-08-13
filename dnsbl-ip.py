@@ -361,10 +361,11 @@ else:
 
 # Load tldextract module, if necessary. Note that live HTTP fetching of the latest
 # public suffix list snapshot is disabled here, since we cannot assume direct
-# internet connnectivity.
+# internet connnectivity. Thus, disable tldextract caching completely, since there is
+# nothing to be cached.
 if config.getboolean("GENERAL", "QUERY_NAMESERVER_IPS"):
     import tldextract
-    extractobject = tldextract.TLDExtract(suffix_list_urls=(), cache_dir="/tmp/")
+    extractobject = tldextract.TLDExtract(suffix_list_urls=(), cache_dir=False)
 
 # Examine FQDNs of active RBLs...
 RBL_DOMAINS = []
