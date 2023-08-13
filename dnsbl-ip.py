@@ -172,46 +172,6 @@ def resolve_nameservers(domain: str):
     return ns
 
 
-def resolve_nameserver_address(domain: str):
-    """ Function call: resolve_nameserver_address(domain)
-
-    This function takes a domain and enumerates all IPv4 and IPv6 addresses of
-    nameserver (NS) records for it. They are returned as an array, and can then
-    be used for assessing the reputation of the queried destination based on
-    its nameserver infrastructure. """
-
-    # Check if this is a valid domain...
-    if not is_valid_domain(domain):
-        return None
-
-    # Enumerate nameservers...
-    ns = resolve_nameservers(domain)
-
-    # Bail out if no nameservers could be enumerated
-    if not ns:
-        return None
-
-    # List of enumerated IPs, default empty...
-    ips = []
-
-    # Resolve A and AAAA records of enumerated nameservers in parallel...
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        tasks = []
-
-        for singlens in ns:
-            tasks.append(executor.submit(resolve_addresses, singlens))
-
-        for singlequery in concurrent.futures.as_completed(tasks):
-            # ... and write the results into the IP address list
-            for singleip in singlequery.result():
-                ips.append(str(singleip))
-
-    # Deduplicate...
-    ips = set(ips)
-
-    return ips
-
-
 def query_rbl(config: dict, rbldomain: tuple, queriedip: str, qstring: str, nsmode: bool = False):
     """ Function call: query_rbl(ConfigParser object,
                                  RBL domain tuple,
@@ -451,11 +411,25 @@ while True:
             IPS = executor.submit(resolve_addresses, QSTRING.strip(".") + ".").result()
 
             # In case nameserver checks are enabled and we are dealing with a domain, resolve
-            # their nameserver IP addresses as well...
+            # the nameserver FQDNs and IPs addresses as well...
             if config.getboolean("GENERAL", "QUERY_NAMESERVER_IPS"):
-                NSIPS = executor.submit(resolve_nameserver_address,
-                                        QSTRING.strip(".") + ".").result()
+                NSFQDNS = executor.submit(resolve_nameservers,
+                                          QSTRING.strip(".") + ".").result()
+
+                if NSFQDNS:
+                    NSIPS = []
+                    for singlens in NSFQDNS:
+                        NSIPS.extend(list(executor.submit(resolve_addresses, singlens).result()))
+
+                if NSIPS:
+                    # Deduplicate...
+                    NSIPS = set(NSIPS)
+
+                # XXX
+                print(NSFQDNS, NSIPS)
+
     else:
+        NSFQDNS = []
         NSIPS = []
 
     # Check if we have some IP addresses to lookup for...
