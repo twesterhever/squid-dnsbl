@@ -359,10 +359,12 @@ else:
     print("BH")
     sys.exit(127)
 
-# Load tldextract module, if necessary...
+# Load tldextract module, if necessary. Note that live HTTP fetching of the latest
+# public suffix list snapshot is disabled here, since we cannot assume direct
+# internet connnectivity.
 if config.getboolean("GENERAL", "QUERY_NAMESERVER_IPS"):
     import tldextract
-    extractobject = tldextract.TLDExtract()
+    extractobject = tldextract.TLDExtract(suffix_list_urls=())
 
 # Examine FQDNs of active RBLs...
 RBL_DOMAINS = []
