@@ -277,7 +277,7 @@ elif not PASSED_RFC_TEST:
     LOGIT.warning("There were failed RFC 5782 (section 5) URIBL tests. Possible fail open provocation, resuming normal operation, you have been warned...")
     PASSED_RFC_TEST = True
 else:
-    LOGIT.info("All specified URIBLs are operational and passed RFC 5782 (section 5) test - excellent. Waiting for input...")
+    LOGIT.debug("All specified URIBLs are operational and passed RFC 5782 (section 5) test - excellent. Waiting for input...")
 
 # Read domain names from STDIN in a while loop, and do URIBL lookups
 # for every valid domin. In case it is not listed in URIBL, ERR is returned.
