@@ -364,7 +364,7 @@ else:
 # internet connnectivity.
 if config.getboolean("GENERAL", "QUERY_NAMESERVER_IPS"):
     import tldextract
-    extractobject = tldextract.TLDExtract(suffix_list_urls=())
+    extractobject = tldextract.TLDExtract(suffix_list_urls=(), cache_dir="/tmp/")
 
 # Examine FQDNs of active RBLs...
 RBL_DOMAINS = []
