@@ -164,8 +164,6 @@ def resolve_nameservers(domain: str):
         if not esld == domain:
             ns = resolve_nameservers(esld)
 
-        return None
-
     # Deduplicate...
     ns = set(ns)
 
