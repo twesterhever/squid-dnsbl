@@ -362,7 +362,7 @@ else:
 # Load tldextract module, if necessary...
 if config.getboolean("GENERAL", "QUERY_NAMESERVER_IPS"):
     import tldextract
-    extractobject = tldextract.TLDExtract(cache_file="/tmp/.tld_set")
+    extractobject = tldextract.TLDExtract()
 
 # Examine FQDNs of active RBLs...
 RBL_DOMAINS = []
