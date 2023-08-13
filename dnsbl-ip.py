@@ -199,17 +199,12 @@ def resolve_nameserver_address(domain: str):
         tasks = []
 
         for singlens in ns:
-            for qtype in ["A", "AAAA"]:
-                tasks.append(executor.submit(RESOLVER.resolve, singlens, qtype))
+            tasks.append(executor.submit(resolve_addresses, singlens))
 
         for singlequery in concurrent.futures.as_completed(tasks):
             # ... and write the results into the IP address list
-            try:
-                for singleip in singlequery.result():
-                    ips.append(str(singleip))
-            except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers, dns.exception.Timeout, ValueError):
-                # Catch possible DNS exceptions...
-                pass
+            for singleip in singlequery.result():
+                ips.append(str(singleip))
 
     # Deduplicate...
     ips = set(ips)
