@@ -132,12 +132,19 @@ def resolve_addresses(domain: str):
     return ips
 
 
-def resolve_nameserver_address(domain: str):
-    """ Function call: resolve_nameserver_address(domain)
+def resolve_nameservers(domain: str):
+    """ Function call: resolve_nameservers(domain)
 
-    This function takes a domain and enumerates all IPv4 and IPv6
-    addresses of nameserver (NS) records for it. They are returned as
-    an array. """
+    This function takes a domain and enumerates all FQDNs of nameserver (NS)
+    recrods for it. They are returned as an array, and can then be used for
+    assessing the reputation of the queried destination based on its nameserver
+    infrastructure.
+
+    Note that NS DNS queries are subject to forgery attempts: A rogue domain
+    may lie about its NS when queried directly, or even return no nameservers
+    at all. Only the delegation data in the superior zone (such as the TLD)
+    cannot be forged without crippling a domains' functionality.
+    """
 
     # Check if this is a valid domain...
     if not is_valid_domain(domain):
@@ -155,9 +162,33 @@ def resolve_nameserver_address(domain: str):
         # In case there were none, trim the queried destination to its eSLD and try again...
         esld = ".".join(extractobject(domain)[1:3])
         if not esld == domain:
-            ips = resolve_nameserver_address(esld)
-            return ips
+            ns = resolve_nameservers(esld)
 
+        return None
+
+    # Deduplicate...
+    ns = set(ns)
+
+    return ns
+
+
+def resolve_nameserver_address(domain: str):
+    """ Function call: resolve_nameserver_address(domain)
+
+    This function takes a domain and enumerates all IPv4 and IPv6 addresses of
+    nameserver (NS) records for it. They are returned as an array, and can then
+    be used for assessing the reputation of the queried destination based on
+    its nameserver infrastructure. """
+
+    # Check if this is a valid domain...
+    if not is_valid_domain(domain):
+        return None
+
+    # Enumerate nameservers...
+    ns = resolve_nameservers(domain)
+
+    # Bail out if no nameservers could be enumerated
+    if not ns:
         return None
 
     # List of enumerated IPs, default empty...
