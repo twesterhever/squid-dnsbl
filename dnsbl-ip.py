@@ -422,10 +422,6 @@ while True:
                 if NSIPS:
                     # Deduplicate...
                     NSIPS = set(NSIPS)
-
-                # XXX
-                print(NSFQDNS, NSIPS)
-
     else:
         NSFQDNS = []
         NSIPS = []
