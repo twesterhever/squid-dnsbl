@@ -432,15 +432,15 @@ while True:
         NSFQDNS = []
         NSIPS = []
 
-    # Check if we have some IP addresses to lookup for...
-    if not IPS:
+    # Check if we have some IP addresses or nameserver data to lookup for...
+    if not IPS and not NSFQDNS and not NSIPS:
         # ... if not, we'll return ERR instead of BH, since the latter one causes Squid
         # to display "permission denied" messages to the client, which is confusing.
         #
         # ERR is considered to be safe here, as Squid won't be able to establish a
         # connection anyway, no matter whether the destination is blacklisted or not,
         # provided both Squid and this script use the same DNS resolver.
-        LOGIT.info("Unable to resolve A/AAAA record of queried destination '%s', returning ERR...", QSTRING)
+        LOGIT.info("Unable to retrieve any A/AAAA/NS records for queried destination '%s', returning ERR...", QSTRING)
         print("ERR")
     else:
         query_result = False
